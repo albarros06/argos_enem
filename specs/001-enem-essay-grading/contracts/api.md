@@ -27,7 +27,7 @@ invalid input → 400 with field-level details.
 | POST | `/api/submissions` | Start submission | body `{themeId? , themeText, imageSha256, contentType, sizeBytes}`. Guards: email verified, credit/quota available (402 `PAYWALL` otherwise — FR-021), size/format limits (FR-004), duplicate `imageSha256` warning (409 `DUPLICATE_IMAGE`, overridable with `force:true`). Returns `{submissionId, uploadUrl}` (R2 presigned). 201 |
 | POST | `/api/submissions/{id}/uploaded` | Client signals upload done | triggers OCR; status → `pending`→`awaiting_review` or `failed` (no credit consumed — FR-007) |
 | GET | `/api/submissions/{id}` | Status + current data | `{status, failureReason?, transcription?: {rawText, meanConfidence}, evaluation?: EvaluationView}` — the polling endpoint (R6) |
-| POST | `/api/submissions/{id}/confirm` | Confirm transcription | body `{confirmedText}` (must be non-trivially derived from rawText — server sanity-checks length). **Consumes credit atomically**, deletes image, starts grading (clarification 1, FR-008). 409 if not `awaiting_review` |
+| POST | `/api/submissions/{id}/confirm` | Confirm transcription | body `{confirmedText}` (server validates: length within 0.5×–2× of `rawText` length AND ≥ the minimum-lines threshold from config; otherwise 400 `VALIDATION_ERROR`). **Consumes credit atomically**, deletes image, starts grading (clarification 1, FR-008). 409 if not `awaiting_review` |
 | DELETE | `/api/submissions/{id}` | Abandon before confirm | deletes image; status → `expired`; no credit consumed |
 | GET | `/api/submissions` | List own submissions | paginated; `{id, themeText, status, totalScore?, createdAt}` (FR-018) |
 
@@ -36,7 +36,7 @@ invalid input → 400 with field-level details.
 ```json
 {
   "totalScore": 720,
-  "competencies": [ {"competency": 1, "score": 160}, ... ],
+  "competencies": [ {"competency": 1, "score": 160, "justification": "…"}, ... ],
   "zeroReason": null,
   "generalFeedback": "…",
   "confirmedText": "…",

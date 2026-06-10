@@ -81,6 +81,7 @@ leaving `awaiting_review` in any direction and on `pending → failed` (FR-027a)
 | submissionId | FK → Submission unique | 1:1 |
 | scoreC1..scoreC5 | int | each ∈ {0,40,80,120,160,200} (DB check constraint) |
 | totalScore | int | = sum(C1..C5); stored for dashboard query simplicity |
+| justifications | jsonb | per-competency justification text (1–5) from the LLM (R3); shown with the scores |
 | generalFeedback | string | FR-012 |
 | zeroReason | enum? | `insufficient_text` \| `genre_disregard` \| `theme_disconnection` (FR-013) |
 | rubricVersion | string | R9 |

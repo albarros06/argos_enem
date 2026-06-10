@@ -298,8 +298,8 @@ granted immediately; then upgrading the plan and verifying the new entitlements 
 - **Student (User)**: A registered account holder; has credentials, credit balance,
   optional subscription, and a submission history.
 - **Submission**: One uploaded essay photo with its theme, upload timestamp, processing
-  status (pending, processing, completed, failed), and link to its transcription and
-  evaluation.
+  status (pending, awaiting_review, grading, completed, failed, expired), and link to
+  its transcription and evaluation.
 - **Transcription**: The text extracted from the uploaded image, with an extraction
   confidence indication; holds both the original extracted text and the
   student-confirmed (possibly corrected) text used for grading.

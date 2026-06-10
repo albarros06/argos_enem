@@ -51,10 +51,11 @@ the same hour (SC-008)
 
 **Constraints**: Low unit cost (~US$0.03/correction: OCR ~$0.0015 + LLM ~$0.03 with
 prompt caching); LGPD compliance (account deletion, data minimization — images deleted
-after confirmation per FR-027a); Brazilian Portuguese UI; payment methods: card + Pix
+after confirmation per FR-027a); Brazilian Portuguese UI; payment methods: card + Pix;
+v1 defaults (config-backed — R11): upload limit 10 MB, payment grace period 7 days
 
 **Scale/Scope**: v1 targets ~10k registered students, ~1k submissions/hour peak;
-~9 entities; ~20 API endpoints; 6 feature modules
+11 entities; ~20 API endpoints; 6 feature modules
 
 ## Constitution Check
 
@@ -114,7 +115,8 @@ src/
 │   └── dashboard/                # score-evolution and per-competency aggregations
 ├── lib/                          # cross-cutting: prisma client, storage (R2), config,
 │                                 #   email (Resend), logger
-└── components/                   # shared UI components
+├── components/                   # shared UI components
+└── instrumentation.ts            # starts interval sweeps at server boot (R6)
 
 prisma/
 ├── schema.prisma

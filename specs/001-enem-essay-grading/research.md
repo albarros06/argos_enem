@@ -58,6 +58,11 @@ document consolidates those decisions and resolves the remaining design unknowns
   events: payment confirmed/received (activate or renew quota), payment overdue (start
   grace period), subscription deleted (revert to free at period end). Webhook handling
   must be idempotent (event id stored, duplicates ignored) — Asaas retries deliveries.
+- **Pix renewals**: Pix has no auto-debit; at each cycle Asaas issues a new charge
+  with its own QR code. The app surfaces this in-app only (clarification 5): when a
+  cycle charge is pending, the app shell shows a renewal banner linking to the
+  manage-subscription page, which fetches and renders the charge's Pix QR via the
+  Asaas adapter. Non-payment follows the existing `past_due` grace flow above.
 - **Upgrade with proration (FR-025)**: Asaas does not prorate automatically. Approach:
   on upgrade, compute the unused fraction of the current cycle, issue a one-off charge
   for the price difference × remaining fraction, and update the subscription's plan and
@@ -85,7 +90,8 @@ document consolidates those decisions and resolves the remaining design unknowns
 - **Decision**: No queue in v1. The grading pipeline (LLM call + validation +
   persistence) runs as an in-process background task triggered at transcription
   confirmation; progress is a status field on Submission
-  (`pending → extracting → awaiting_review → grading → completed | failed`); the
+  (`pending → awaiting_review → grading → completed | failed | expired`; OCR runs
+  while the submission is `pending`); the
   client polls `GET /api/submissions/{id}` every few seconds. On grading failure the
   credit is auto-refunded (FR-015) and status set to `failed`.
 - **Rationale**: a queue (Redis/BullMQ) adds two infrastructure pieces to serve a
