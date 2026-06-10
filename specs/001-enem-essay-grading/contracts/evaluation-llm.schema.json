@@ -1,0 +1,54 @@
+{
+  "$comment": "Structured-output schema passed to Claude Sonnet 4.6 via output_config.format (type json_schema). Server re-validates with Zod and computes annotation offsets (research R3, R8, R9).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["competencies", "zeroReason", "generalFeedback", "annotations"],
+  "properties": {
+    "zeroReason": {
+      "description": "Non-null only when an official ENEM zero condition applies; when set, all scores must be 0 (FR-013).",
+      "anyOf": [
+        { "type": "null" },
+        { "type": "string", "enum": ["insufficient_text", "genre_disregard", "theme_disconnection"] }
+      ]
+    },
+    "competencies": {
+      "type": "array",
+      "description": "Exactly 5 items, competencies 1..5 in order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["competency", "score", "justification"],
+        "properties": {
+          "competency": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "score": { "type": "integer", "enum": [0, 40, 80, 120, 160, 200] },
+          "justification": {
+            "type": "string",
+            "description": "One short paragraph, in Brazilian Portuguese, citing the rubric level descriptor that matches."
+          }
+        }
+      }
+    },
+    "generalFeedback": {
+      "type": "string",
+      "description": "Overall strengths and highest-impact improvement areas, Brazilian Portuguese (FR-012)."
+    },
+    "annotations": {
+      "type": "array",
+      "description": "Inline corrections anchored to the text. At least 3 when text quality allows (SC-005); may be empty only for zero-scored essays.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["competency", "excerpt", "issue", "suggestion"],
+        "properties": {
+          "competency": { "type": "integer", "enum": [1, 2, 3, 4, 5] },
+          "excerpt": {
+            "type": "string",
+            "description": "VERBATIM substring copied character-for-character from the essay text. The server locates it to compute highlight offsets (R8)."
+          },
+          "issue": { "type": "string", "description": "What is wrong in this passage." },
+          "suggestion": { "type": "string", "description": "Concrete suggested correction." }
+        }
+      }
+    }
+  }
+}
