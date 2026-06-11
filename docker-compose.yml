@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: argos
+    ports:
+      # 5434 no host para não conflitar com um PostgreSQL local em 5432
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: argos_test
+    ports:
+      - "5433:5432"
+
+volumes:
+  pgdata:

@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  name            String
+  emailVerifiedAt DateTime?
+  asaasCustomerId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  submissions        Submission[]
+  creditTransactions CreditTransaction[]
+  subscription       Subscription?
+  payments           PaymentTransaction[]
+  authTokens         AuthToken[]
+}
+
+enum AuthTokenKind {
+  verify_email
+  reset_password
+}
+
+model AuthToken {
+  id        String        @id @default(uuid())
+  userId    String
+  kind      AuthTokenKind
+  tokenHash String        @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
+}
+
+enum SubmissionStatus {
+  pending
+  awaiting_review
+  grading
+  completed
+  failed
+  expired
+}
+
+enum FailureReason {
+  extraction_failed
+  insufficient_text
+  grading_failed
+}
+
+model Submission {
+  id            String           @id @default(uuid())
+  userId        String
+  themeId       String?
+  themeText     String
+  status        SubmissionStatus @default(pending)
+  imageKey       String?
+  imageSha256    String
+  failureReason  FailureReason?
+  resultViewedAt DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme         EssayTheme?         @relation(fields: [themeId], references: [id])
+  transcription Transcription?
+  evaluation    Evaluation?
+  credits       CreditTransaction[]
+
+  @@index([userId, createdAt])
+  @@index([userId, imageSha256])
+  @@index([status, updatedAt])
+}
+
+model Transcription {
+  id             String    @id @default(uuid())
+  submissionId   String    @unique
+  rawText        String
+  confirmedText  String?
+  meanConfidence Float
+  confirmedAt    DateTime?
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+enum ZeroReason {
+  insufficient_text
+  genre_disregard
+  theme_disconnection
+}
+
+model Evaluation {
+  id              String      @id @default(uuid())
+  submissionId    String      @unique
+  scoreC1         Int
+  scoreC2         Int
+  scoreC3         Int
+  scoreC4         Int
+  scoreC5         Int
+  totalScore      Int
+  justifications  Json
+  generalFeedback String
+  zeroReason      ZeroReason?
+  rubricVersion   String
+  modelId         String
+  createdAt       DateTime    @default(now())
+
+  submission  Submission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  annotations Annotation[]
+}
+
+model Annotation {
+  id           String  @id @default(uuid())
+  evaluationId String
+  competency   Int
+  excerpt      String
+  startOffset  Int?
+  endOffset    Int?
+  anchored     Boolean
+  issue        String
+  suggestion   String
+
+  evaluation Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+}
+
+enum CreditKind {
+  signup_grant
+  quota_grant
+  consume
+  refund
+  quota_expiry
+}
+
+model CreditTransaction {
+  id           String     @id @default(uuid())
+  userId       String
+  amount       Int
+  kind         CreditKind
+  submissionId String?
+  cycleId      String?
+  createdAt    DateTime   @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submission Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, cycleId])
+}
+
+enum PlanTier {
+  entry
+  premium
+}
+
+model SubscriptionPlan {
+  id           String   @id @default(uuid())
+  tier         PlanTier
+  name         String
+  priceCents   Int
+  monthlyQuota Int
+  active       Boolean  @default(true)
+
+  subscriptions Subscription[]
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+  expired
+}
+
+model Subscription {
+  id                  String             @id @default(uuid())
+  userId              String             @unique
+  planId              String
+  asaasSubscriptionId String
+  status              SubscriptionStatus
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
+  cancelAtPeriodEnd   Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     SubscriptionPlan     @relation(fields: [planId], references: [id])
+  payments PaymentTransaction[]
+
+  @@index([status, currentPeriodEnd])
+}
+
+enum PaymentKind {
+  cycle
+  upgrade_proration
+}
+
+enum PaymentMethod {
+  card
+  pix
+}
+
+enum PaymentStatus {
+  pending
+  confirmed
+  failed
+  refunded
+}
+
+model PaymentTransaction {
+  id             String        @id @default(uuid())
+  // Nullable: anonimizado (retenção fiscal) quando a conta é apagada — LGPD (FR-028).
+  userId         String?
+  subscriptionId String?
+  asaasPaymentId String        @unique
+  kind           PaymentKind
+  amountCents    Int
+  method         PaymentMethod
+  status         PaymentStatus
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+model EssayTheme {
+  id     String  @id @default(uuid())
+  title  String
+  year   Int?
+  active Boolean @default(true)
+
+  submissions Submission[]
+}
+
+model WebhookEvent {
+  id          String   @id
+  payload     Json
+  processedAt DateTime @default(now())
+}
