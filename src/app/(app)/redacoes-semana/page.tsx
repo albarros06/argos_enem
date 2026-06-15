@@ -11,13 +11,13 @@ export default async function WeeklyThemePage() {
 
   if (!view) {
     return (
-      <main>
+      <>
         <h1>Redação da semana</h1>
         <p className="muted">Nenhum tema ativo no momento. Volte em breve!</p>
         <p>
           <Link href="/redacoes-semana/historico">Ver meu histórico de participações</Link>
         </p>
-      </main>
+      </>
     );
   }
 
@@ -26,7 +26,7 @@ export default async function WeeklyThemePage() {
   const tier = session?.user?.id ? await getActiveTier(session.user.id) : null;
 
   return (
-    <main>
+    <>
       <h1>Redação da semana</h1>
       <h2>{view.theme.title}</h2>
       <p>
@@ -105,6 +105,6 @@ export default async function WeeklyThemePage() {
           </table>
         )}
       </section>
-    </main>
+    </>
   );
 }

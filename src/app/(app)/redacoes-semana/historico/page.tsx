@@ -14,7 +14,7 @@ export default async function WeeklyHistoryPage() {
   const { entries } = await getParticipationHistory(session.user.id);
 
   return (
-    <main>
+    <>
       <h1>Histórico de redações da semana</h1>
       <p>
         <Link href="/redacoes-semana">← Tema da semana</Link>
@@ -45,6 +45,6 @@ export default async function WeeklyHistoryPage() {
           </tbody>
         </table>
       )}
-    </main>
+    </>
   );
 }
