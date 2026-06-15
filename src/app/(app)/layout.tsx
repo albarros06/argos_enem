@@ -16,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <nav className="appnav">
         <Link href="/dashboard">Painel</Link>
         <Link href="/submissions">Redações</Link>
+        <Link href="/redacoes-semana">Redação da semana</Link>
         <Link className="button" href="/submissions/new">
           Nova redação
         </Link>

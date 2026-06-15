@@ -12,6 +12,7 @@ interface Theme {
 interface Props {
   themes: Theme[];
   maxUploadBytes: number;
+  weeklyTheme?: { id: string; title: string } | null;
 }
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png"];
@@ -23,7 +24,7 @@ async function sha256Hex(file: File): Promise<string> {
     .join("");
 }
 
-export function NewSubmissionForm({ themes, maxUploadBytes }: Props) {
+export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [themeId, setThemeId] = useState("");
@@ -51,7 +52,7 @@ export function NewSubmissionForm({ themes, maxUploadBytes }: Props) {
       return;
     }
     const selectedTheme = themes.find((theme) => theme.id === themeId);
-    if (!selectedTheme && !themeText.trim()) {
+    if (!weeklyTheme && !selectedTheme && !themeText.trim()) {
       setError("Escolha um tema do catálogo ou escreva o tema da proposta.");
       return;
     }
@@ -63,12 +64,13 @@ export function NewSubmissionForm({ themes, maxUploadBytes }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          themeId: selectedTheme?.id,
-          themeText: selectedTheme?.title ?? themeText.trim(),
+          themeId: weeklyTheme ? undefined : selectedTheme?.id,
+          themeText: weeklyTheme?.title ?? selectedTheme?.title ?? themeText.trim(),
           imageSha256,
           contentType: file.type,
           sizeBytes: file.size,
           force,
+          ...(weeklyTheme ? { weeklyThemeId: weeklyTheme.id } : {}),
         }),
       });
       if (createResponse.status === 402) {
@@ -128,27 +130,36 @@ export function NewSubmissionForm({ themes, maxUploadBytes }: Props) {
       <label htmlFor="photo">Foto da redação (JPEG ou PNG, até {limitMb} MB)</label>
       <input id="photo" ref={fileRef} type="file" accept="image/jpeg,image/png" required />
 
-      <label htmlFor="theme">Tema (provas anteriores do ENEM)</label>
-      <select id="theme" value={themeId} onChange={(event) => setThemeId(event.target.value)}>
-        <option value="">— Escrever tema livre —</option>
-        {themes.map((theme) => (
-          <option key={theme.id} value={theme.id}>
-            {theme.year ? `${theme.year} — ` : ""}
-            {theme.title}
-          </option>
-        ))}
-      </select>
-
-      {!themeId && (
+      {weeklyTheme ? (
+        <div className="banner">
+          <strong>Redação da semana</strong>
+          <p>{weeklyTheme.title}</p>
+        </div>
+      ) : (
         <>
-          <label htmlFor="themeText">Tema livre</label>
-          <input
-            id="themeText"
-            value={themeText}
-            onChange={(event) => setThemeText(event.target.value)}
-            placeholder="Digite o tema da proposta de redação"
-            maxLength={500}
-          />
+          <label htmlFor="theme">Tema (provas anteriores do ENEM)</label>
+          <select id="theme" value={themeId} onChange={(event) => setThemeId(event.target.value)}>
+            <option value="">— Escrever tema livre —</option>
+            {themes.map((theme) => (
+              <option key={theme.id} value={theme.id}>
+                {theme.year ? `${theme.year} — ` : ""}
+                {theme.title}
+              </option>
+            ))}
+          </select>
+
+          {!themeId && (
+            <>
+              <label htmlFor="themeText">Tema livre</label>
+              <input
+                id="themeText"
+                value={themeText}
+                onChange={(event) => setThemeText(event.target.value)}
+                placeholder="Digite o tema da proposta de redação"
+                maxLength={500}
+              />
+            </>
+          )}
         </>
       )}
 

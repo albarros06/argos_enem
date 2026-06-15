@@ -65,3 +65,13 @@ export async function requireVerifiedUser(): Promise<User> {
   }
   return user;
 }
+
+// Gate do painel administrativo (/admin e /api/admin). Sessão sem role de
+// administrador é rejeitada (FR-001).
+export async function requireAdmin(): Promise<User> {
+  const user = await requireUser();
+  if (user.role !== "admin") {
+    throw new ApiError("FORBIDDEN", 403, "Acesso restrito a administradores.");
+  }
+  return user;
+}

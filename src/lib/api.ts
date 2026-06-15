@@ -5,7 +5,9 @@ import { logger } from "@/lib/logger";
 export type ErrorCode =
   | "UNAUTHENTICATED"
   | "EMAIL_NOT_VERIFIED"
+  | "FORBIDDEN"
   | "PAYWALL"
+  | "PREMIUM_REQUIRED"
   | "DUPLICATE_IMAGE"
   | "INVALID_STATE"
   | "VALIDATION_ERROR"
@@ -13,6 +15,12 @@ export type ErrorCode =
   | "TOKEN_EXPIRED"
   | "NOT_FOUND"
   | "RATE_LIMITED"
+  | "THEME_NOT_ACTIVE"
+  | "ALREADY_ENTERED"
+  | "NO_ACTIVE_THEME"
+  | "ACTIVE_THEME_EXISTS"
+  | "ALREADY_CLOSED"
+  | "DISPLAY_AS_REQUIRED"
   | "INTERNAL";
 
 export class ApiError extends Error {

@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 import { business } from "@/lib/config";
 import { countEssayLines } from "@/lib/text";
 import { refundCredit } from "@/modules/credits";
+import { deleteEntry } from "@/modules/weekly";
 import { gradingProvider } from "./llm";
 import { llmEvaluationSchema, validateEvaluationConsistency, type LlmEvaluation } from "./schema";
 import { anchorAnnotations } from "./anchoring";
@@ -107,12 +108,15 @@ export async function evaluateSubmission(submissionId: string): Promise<void> {
 }
 
 // FR-015: falha após consumo de crédito → devolve o crédito e marca como failed.
+// Uma redação que falhou na correção não entra no ranking; a vaga no tema da
+// semana é liberada (a submissão excluída deixa de bloquear nova participação).
 async function failSubmission(submissionId: string, userId: string): Promise<void> {
   await prisma.submission.update({
     where: { id: submissionId },
     data: { status: "failed", failureReason: "grading_failed" },
   });
   await refundCredit(userId, submissionId);
+  await deleteEntry(submissionId);
 }
 
 function insufficientTextEvaluation(): LlmEvaluation {
