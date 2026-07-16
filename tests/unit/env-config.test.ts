@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { env } from "@/lib/config";
 
 /**
@@ -146,6 +146,19 @@ describe("Environment Configuration", () => {
         expect(env().ASAAS_API_KEY).toBeTruthy();
         expect(env().ASAAS_WEBHOOK_TOKEN).toBeTruthy();
       }
+    });
+  });
+
+  describe("Vertex AI (Grading)", () => {
+    it("GOOGLE_CLOUD_LOCATION defaults to us-central1 when unset", () => {
+      // Grading via Gemini roda no Vertex AI; us-central1 serve o gemini-2.5-pro,
+      // que não está disponível em southamerica-east1 (FR-011).
+      expect(env().GOOGLE_CLOUD_LOCATION).toBe("us-central1");
+    });
+
+    it("GOOGLE_CLOUD_PROJECT defaults to empty (derived from credential project_id)", () => {
+      // Vazio por padrão: o projeto é derivado do project_id da credencial de serviço.
+      expect(env().GOOGLE_CLOUD_PROJECT).toBe("");
     });
   });
 

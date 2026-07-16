@@ -6,8 +6,13 @@ const envSchema = z.object({
   AUTH_SECRET: z.string().min(1),
   APP_URL: z.string().url().default("http://localhost:3000"),
   ANTHROPIC_API_KEY: z.string().default(""),
-  GEMINI_API_KEY: z.string().default(""),
   GOOGLE_APPLICATION_CREDENTIALS_JSON: z.string().default(""),
+  // Vertex AI (grading via Gemini). Região us-central1: gemini-2.5-pro não é
+  // servido em southamerica-east1, então a residência em SP foi trocada por
+  // us-central1 (processamento transitório nos EUA — ver spec FR-011). O
+  // projeto, quando vazio, é derivado do project_id da credencial de serviço.
+  GOOGLE_CLOUD_LOCATION: z.string().default("us-central1"),
+  GOOGLE_CLOUD_PROJECT: z.string().default(""),
   R2_ENDPOINT: z.string().default(""),
   R2_ACCESS_KEY_ID: z.string().default(""),
   R2_SECRET_ACCESS_KEY: z.string().default(""),
