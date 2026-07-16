@@ -15,21 +15,22 @@ export function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
+      aria-label={`Mudar para o tema ${isDark ? 'claro' : 'escuro'}`}
       className="theme-toggle"
       style={{
-        backgroundColor: 'var(--color-surface-fg)',
-        color: 'var(--color-text-primary)',
-        border: '1px solid var(--color-border-default)',
-        padding: 'var(--space-sm)',
-        borderRadius: 'var(--radius-button)',
+        backgroundColor: 'var(--color-surface-alt)',
+        color: 'var(--color-text-secondary)',
+        border: '2px solid var(--color-border-default)',
+        padding: 'var(--space-sm) var(--space-md)',
+        borderRadius: 'var(--radius-pill)',
         cursor: 'pointer',
-        fontSize: '14px',
+        fontSize: '0.85rem',
+        fontWeight: 700,
         fontFamily: 'var(--type-family-body)',
         transition: 'color 150ms ease, background-color 150ms ease',
       }}
     >
-      {isDark ? '☀️ Light' : '🌙 Dark'}
+      {isDark ? 'Tema claro' : 'Tema escuro'}
     </button>
   );
 }

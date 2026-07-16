@@ -16,20 +16,27 @@
   cursor: pointer;
   user-select: none;
   font-family: var(--type-family-body);
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 0.95rem;
   color: var(--color-text-primary);
 }
 
 .checkmark {
   display: inline-flex;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--color-border-default);
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  background-color: var(--color-surface-bg);
+  background-color: var(--color-surface-fg);
   transition: all 150ms ease;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.input:focus-visible + .label .checkmark {
+  box-shadow: var(--shadow-focus);
+  border-color: var(--color-primary-brand);
 }
 
 .input:checked + .label .checkmark {
@@ -40,8 +47,8 @@
 
 .input:checked + .label .checkmark::after {
   content: '✓';
-  font-size: 12px;
-  font-weight: bold;
+  font-size: 0.85rem;
+  font-weight: 900;
 }
 
 .input:disabled + .label {

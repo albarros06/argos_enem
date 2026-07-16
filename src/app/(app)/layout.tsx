@@ -26,6 +26,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <>
       <nav className={styles.nav}>
         <div className={styles.navContent}>
+          <Link href="/dashboard" className={styles.brand} aria-label="Argos — início">
+            <span className={styles.brandMark} aria-hidden="true" />
+            Argos
+          </Link>
           <div className={styles.navLinks}>
             <Link href="/dashboard" className={styles.navLink}>
               Painel

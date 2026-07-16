@@ -1,15 +1,17 @@
 .title {
   font-family: var(--type-family-display);
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   color: var(--color-text-primary);
-  margin: 0 0 var(--space-md) 0;
+  margin: 0 0 var(--space-sm) 0;
 }
 
 .subtitle {
   font-family: var(--type-family-body);
-  font-size: 14px;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--color-text-secondary);
   margin: 0 0 var(--space-xl) 0;
 }
@@ -20,19 +22,21 @@
   align-items: center;
   gap: var(--space-lg);
   text-align: center;
-  padding: var(--space-xl);
+  padding: var(--space-xl) var(--space-lg);
 }
 
 .emptyText {
   font-family: var(--type-family-body);
-  font-size: 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--color-text-secondary);
   margin: 0;
 }
 
 .cardText {
   font-family: var(--type-family-body);
-  font-size: 14px;
+  font-size: 1rem;
+  font-weight: 500;
   line-height: 1.6;
   color: var(--color-text-primary);
   margin: 0;
@@ -40,23 +44,46 @@
 
 .chartTitle {
   font-family: var(--type-family-display);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--color-text-primary);
   margin: 0 0 var(--space-lg) 0;
 }
 
+/* Theme-aware SVG line chart */
+.chart line {
+  stroke: var(--color-border-default);
+}
+
+.chart polyline {
+  stroke: var(--color-primary-brand);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart circle {
+  fill: var(--color-primary-brand);
+}
+
+.chart text {
+  fill: var(--color-text-tertiary);
+  font-family: var(--type-family-body);
+  font-weight: 700;
+}
+
 .sectionTitle {
   font-family: var(--type-family-display);
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--color-text-primary);
-  margin: var(--space-xl) 0 var(--space-md) 0;
+  margin: var(--space-2xl) 0 var(--space-md) 0;
 }
 
 .competencyHint {
   font-family: var(--type-family-body);
-  font-size: 14px;
+  font-size: 0.95rem;
+  font-weight: 500;
   color: var(--color-text-secondary);
   margin: 0 0 var(--space-lg) 0;
 }
@@ -83,8 +110,8 @@
 
 .competencyHeader strong {
   font-family: var(--type-family-body);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 800;
   color: var(--color-text-primary);
 }
 
@@ -95,7 +122,8 @@
 
 .competencyStats {
   font-family: var(--type-family-body);
-  font-size: 13px;
+  font-size: 0.9rem;
+  font-weight: 500;
   line-height: 1.5;
   color: var(--color-text-secondary);
   margin: 0;
@@ -113,37 +141,40 @@
 .submissionItem {
   background-color: var(--color-surface-fg);
   padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-default);
-  transition: all 150ms ease;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border-default);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
 }
 
 .submissionItem:hover {
-  background-color: var(--color-surface-bg);
+  background-color: var(--color-primary-softer);
   border-color: var(--color-primary-brand);
+  transform: translateX(3px);
 }
 
 .submissionLink {
   font-family: var(--type-family-body);
-  font-size: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--color-primary-brand);
   text-decoration: none;
-  transition: opacity 150ms ease;
   display: block;
 }
 
 .submissionLink:hover {
-  opacity: 0.8;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 @media (max-width: 768px) {
   .title {
-    font-size: 24px;
+    font-size: 1.6rem;
   }
 
   .sectionTitle {
-    font-size: 18px;
+    font-size: 1.25rem;
   }
 
   .competencyGrid {

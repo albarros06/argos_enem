@@ -6,22 +6,30 @@
   border-radius: var(--radius-card);
   padding: var(--space-lg);
 
-  transition: background-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease,
+    border-color 150ms ease;
 }
 
 .variant-default {
-  border: 1px solid var(--color-border-default);
+  border: 2px solid var(--color-border-default);
+  border-bottom-width: 3px;
+  box-shadow: var(--shadow-sm);
 }
 
 .variant-elevated {
+  border: 2px solid var(--color-border-default);
   box-shadow: var(--shadow-md);
 }
 
 .variant-outlined {
-  border: 1px solid var(--color-border-default);
-  background-color: var(--color-surface-bg);
+  border: 2px solid var(--color-border-strong);
+  background-color: var(--color-surface-fg);
 }
 
 .variant-elevated:hover {
   box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }

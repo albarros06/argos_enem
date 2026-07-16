@@ -1,12 +1,36 @@
 .nav {
-  background-color: var(--color-surface-fg);
-  border-bottom: 1px solid var(--color-border-default);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: color-mix(in srgb, var(--color-surface-fg) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 2px solid var(--color-border-default);
   padding: var(--space-md) var(--space-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-lg);
-  box-shadow: var(--shadow-sm);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--type-family-display);
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.brandMark {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gradient-brand);
+  box-shadow: inset 0 0 0 5px var(--color-surface-fg);
+  flex-shrink: 0;
 }
 
 .navContent {
@@ -18,44 +42,47 @@
 
 .navLinks {
   display: flex;
-  gap: var(--space-lg);
+  gap: var(--space-xs);
   align-items: center;
 }
 
 .navLink {
   font-family: var(--type-family-body);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
   text-decoration: none;
-  transition: color 150ms ease;
-  padding: var(--space-sm) 0;
-  border-bottom: 2px solid transparent;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-pill);
 }
 
 .navLink:hover {
   color: var(--color-primary-brand);
-  border-bottom-color: var(--color-primary-brand);
+  background-color: var(--color-primary-softer);
 }
 
 .navActions {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
+  gap: var(--space-md);
   margin-left: auto;
 }
 
 .main {
   background-color: var(--color-surface-bg);
-  min-height: calc(100vh - 80px);
-  padding: var(--space-xl);
-  max-width: 1200px;
+  min-height: calc(100vh - 72px);
+  padding: var(--space-2xl) var(--space-xl);
+  max-width: 1120px;
   margin: 0 auto;
   width: 100%;
 }
 
 @media (max-width: 768px) {
   .nav {
+    position: static;
     flex-direction: column;
     gap: var(--space-md);
     padding: var(--space-md);
@@ -68,8 +95,8 @@
 
   .navLinks {
     width: 100%;
-    flex-direction: column;
-    gap: var(--space-md);
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .navActions {
