@@ -113,17 +113,17 @@
 
 **Purpose**: Quality assurance, optimization, and documentation
 
-- [ ] T042 [P] Validate WCAG AA contrast ratios in both dark and light themes: test all color token pairs in production context; fix any failures (SC-006)
-- [ ] T043 [P] Performance audit: measure token loading time, CSS parsing, theme switch latency; optimize if needed (SC-007)
-- [ ] T044 [P] Create/update design system documentation in `DESIGN_SYSTEM.md`: brand guidelines, token definitions, component guidelines, contribution guide per Constitution
-- [ ] T045 [P] Add linting rule to flag hardcoded colors/sizes in new components: custom ESLint rule or Stylelint rule to prevent regressions
-- [ ] T046 Update `CLAUDE.md` project context: reference design system documentation and token guidelines for future developers
-- [ ] T047 Create deprecation guide for old/hardcoded patterns: document what not to use, what to replace it with
-- [ ] T048 Write contribution guide for adding new components: must use tokens, examples, checklist to verify before PR
-- [ ] T049 [P] Unit tests for token availability: `tests/unit/tokens.test.ts` verifies all tokens are defined, exported, and accessible via CSS and JS
-- [ ] T050 [P] Unit tests for theme switching: `tests/unit/theme.test.ts` verifies `getThemePreference()`, `setTheme()`, localStorage persistence, system preference detection
+- [x] T042 [P] Validate WCAG AA contrast ratios in both dark and light themes: test all color token pairs in production context; fix any failures (SC-006)
+- [x] T043 [P] Performance audit: measure token loading time, CSS parsing, theme switch latency; optimize if needed (SC-007)
+- [x] T044 [P] Create/update design system documentation in `DESIGN_SYSTEM.md`: brand guidelines, token definitions, component guidelines, contribution guide per Constitution
+- [x] T045 [P] Add linting rule to flag hardcoded colors/sizes in new components: custom ESLint rule or Stylelint rule to prevent regressions
+- [x] T046 Update `CLAUDE.md` project context: reference design system documentation and token guidelines for future developers
+- [x] T047 Create deprecation guide for old/hardcoded patterns: document what not to use, what to replace it with
+- [x] T048 Write contribution guide for adding new components: must use tokens, examples, checklist to verify before PR
+- [x] T049 [P] Unit tests for token availability: `tests/unit/tokens.test.ts` verifies all tokens are defined, exported, and accessible via CSS and JS
+- [x] T050 [P] Unit tests for theme switching: `tests/unit/theme.test.ts` verifies `getThemePreference()`, `setTheme()`, localStorage persistence, system preference detection
 
-**Checkpoint**: Design system is production-ready, well-documented, and protected against regressions. New developers have clear guidance for token usage.
+**Checkpoint**: ✅ COMPLETE — Design system is production-ready, well-documented, and protected against regressions. New developers have clear guidance for token usage.
 
 ---
 
