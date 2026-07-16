@@ -6,4 +6,5 @@ allowBuilds:
   protobufjs: true
   sharp: true
   unrs-resolver: true
-  '@google/genai': set this to true or false
+  # Único script de instalação é `preinstall: echo` (no-op); o pacote publica dist/ pronto.
+  '@google/genai': false
