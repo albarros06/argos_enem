@@ -34,14 +34,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleSetTheme = (newTheme: Theme) => {
-    setTheme(newTheme);
-    setThemeState(newTheme);
+    if (mounted) {
+      setTheme(newTheme);
+      setThemeState(newTheme);
+    }
   };
-
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme }}>

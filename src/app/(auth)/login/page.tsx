@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Input from "@/components/Input/Input";
 import Button from "@/components/Button/Button";
+import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import styles from "./login.module.css";
 
 function LoginForm() {
@@ -34,7 +35,11 @@ function LoginForm() {
   }
 
   return (
-    <main className={styles.container}>
+    <>
+      <div className={styles.themeToggleWrapper}>
+        <ThemeToggleClient />
+      </div>
+      <main className={styles.container}>
       <div className={styles.card}>
         <h1 className={styles.title}>Entrar</h1>
         <form onSubmit={handleSubmit} className={styles.form}>
@@ -72,6 +77,7 @@ function LoginForm() {
         </div>
       </div>
     </main>
+    </>
   );
 }
 
