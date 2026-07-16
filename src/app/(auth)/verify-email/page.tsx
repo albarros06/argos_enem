@@ -3,6 +3,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Input from "@/components/Input/Input";
+import Button from "@/components/Button/Button";
+import styles from "../auth.module.css";
 
 function VerifyEmail() {
   const searchParams = useSearchParams();
@@ -33,46 +36,63 @@ function VerifyEmail() {
   }, [token]);
 
   return (
-    <main>
-      <h1>Confirmação de e-mail</h1>
-      <p className={status === "error" ? "error" : undefined}>{message}</p>
+    <div className={styles.card}>
+      <h1 className={styles.title}>Confirmação de e-mail</h1>
+      <p className={status === "error" ? styles.error : styles.message}>{message}</p>
       {status === "ok" && (
-        <p>
-          <Link className="button" href="/login">
-            Entrar
-          </Link>
-        </p>
+        <div className={styles.footer}>
+          <Link href="/login">Entrar</Link>
+        </div>
       )}
       {status === "error" && <ResendForm />}
-    </main>
+    </div>
   );
 }
 
 function ResendForm() {
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setSubmitting(true);
     const form = new FormData(event.currentTarget);
     await fetch("/api/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: form.get("email") }),
     });
+    setSubmitting(false);
     setSent(true);
   }
 
   if (sent) {
-    return <p>Se o e-mail estiver cadastrado, enviamos um novo link de confirmação.</p>;
+    return (
+      <p className={styles.message}>
+        Se o e-mail estiver cadastrado, enviamos um novo link de confirmação.
+      </p>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="email">Reenviar confirmação para</label>
-      <input id="email" name="email" type="email" required />
-      <p>
-        <button type="submit">Reenviar e-mail</button>
-      </p>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <Input
+        id="email"
+        name="email"
+        type="email"
+        label="Reenviar confirmação para"
+        required
+        disabled={submitting}
+      />
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        disabled={submitting}
+        className={styles.submitButton}
+      >
+        {submitting ? "Enviando..." : "Reenviar e-mail"}
+      </Button>
     </form>
   );
 }

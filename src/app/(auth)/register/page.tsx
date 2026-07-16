@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import Input from "@/components/Input/Input";
 import Button from "@/components/Button/Button";
-import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import styles from "../auth.module.css";
 
 export default function RegisterPage() {
@@ -37,70 +36,49 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <>
-        <div className={styles.themeToggleWrapper}>
-          <ThemeToggleClient />
+      <div className={styles.card}>
+        <h1 className={styles.title}>Confira seu e-mail</h1>
+        <p className={styles.message}>
+          Enviamos um link de confirmação para o seu e-mail. Confirme para começar a enviar
+          redações.
+        </p>
+        <div className={styles.footer}>
+          <Link href="/login">Ir para o login</Link>
         </div>
-        <main className={styles.container}>
-          <div className={styles.card}>
-            <h1 className={styles.title}>Confira seu e-mail</h1>
-            <p className={styles.message}>
-              Enviamos um link de confirmação para o seu e-mail. Confirme para começar a
-              enviar redações.
-            </p>
-            <div className={styles.footer}>
-              <Link href="/login">Ir para o login</Link>
-            </div>
-          </div>
-        </main>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className={styles.themeToggleWrapper}>
-        <ThemeToggleClient />
+    <div className={styles.card}>
+      <h1 className={styles.title}>Criar conta</h1>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <Input id="name" name="name" label="Nome" required disabled={submitting} />
+        <Input id="email" name="email" type="email" label="E-mail" required disabled={submitting} />
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          label="Senha (mínimo 8 caracteres)"
+          minLength={8}
+          required
+          disabled={submitting}
+        />
+        {error && <p className={styles.error}>{error}</p>}
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          disabled={submitting}
+          className={styles.submitButton}
+        >
+          {submitting ? "Criando..." : "Criar conta"}
+        </Button>
+      </form>
+      <div className={styles.footer}>
+        <span>Já tem conta?</span>
+        <Link href="/login">Entrar</Link>
       </div>
-      <main className={styles.container}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>Criar conta</h1>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <Input id="name" name="name" label="Nome" required disabled={submitting} />
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              label="E-mail"
-              required
-              disabled={submitting}
-            />
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              label="Senha (mínimo 8 caracteres)"
-              minLength={8}
-              required
-              disabled={submitting}
-            />
-            {error && <p className={styles.error}>{error}</p>}
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              disabled={submitting}
-              className={styles.submitButton}
-            >
-              {submitting ? "Criando..." : "Criar conta"}
-            </Button>
-          </form>
-          <div className={styles.footer}>
-            <span>Já tem conta?</span>
-            <Link href="/login">Entrar</Link>
-          </div>
-        </div>
-      </main>
-    </>
+    </div>
   );
 }

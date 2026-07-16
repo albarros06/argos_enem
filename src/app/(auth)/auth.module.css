@@ -31,6 +31,8 @@
   color: var(--color-text-primary);
   margin: 0 0 var(--space-xl) 0;
   text-align: center;
+  /* Sem isto "Confirmação de e-mail" quebra no hífen, deixando "mail" sozinho. */
+  text-wrap: balance;
 }
 
 .form {
