@@ -1,0 +1,63 @@
+/* Design System: Input Styles */
+/* All values use CSS custom properties (design tokens) */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.label {
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  display: block;
+}
+
+.input {
+  font-family: var(--type-family-body);
+  background-color: var(--color-surface-fg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-input);
+
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary-brand);
+  box-shadow: 0 0 0 2px rgba(46, 91, 255, 0.1);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.size-sm {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 12px;
+}
+
+.size-md {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 14px;
+}
+
+.size-lg {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 16px;
+}
+
+.input.error {
+  border-color: var(--color-error);
+}
+
+.errorMessage {
+  font-family: var(--type-family-body);
+  font-size: 12px;
+  color: var(--color-error);
+  display: block;
+}

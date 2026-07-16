@@ -57,9 +57,9 @@
 - [x] T018 [P] [US1] Refactor `src/components/Button/Button.module.css` (or equivalent) to use `var(--token-name)` syntax for all color, spacing, radius, and shadow properties
 - [x] T019 [P] [US1] Refactor `src/components/Input/Input.tsx` and `Input.module.css` to use tokens: background (`--color-surface-bg`), text (`--color-text-primary`), border (`--color-border-default`), spacing (`--space-sm`), radius (`--radius-input`)
 - [x] T020 [P] [US1] Refactor `src/components/Card/Card.tsx` and `Card.module.css` to use tokens: background (`--color-surface-fg`), spacing (`--space-lg`), radius (`--radius-card`), shadow (`--shadow-md`)
-- [x] T021 [US1] Create `src/components/Form/Form.tsx` refactored component that uses design tokens for layout and styling; document token usage in component JSDoc
-- [x] T022 [US1] Write visual regression test `tests/integration/component-tokens-p1.test.ts`: render Button, Input, Card in dark and light themes; screenshot both and verify consistency with DESIGN_SYSTEM.md
-- [x] T023 [US1] Document token usage in `docs/tokens-usage-guide.md`: patterns for using tokens in components, examples from Button/Input/Card, dos and don'ts
+- [ ] T021 [US1] Create `src/components/Form/Form.tsx` refactored component that uses design tokens for layout and styling; document token usage in component JSDoc
+- [ ] T022 [US1] Write visual regression test `tests/integration/component-tokens-p1.test.ts`: render Button, Input, Card in dark and light themes; screenshot both and verify consistency with DESIGN_SYSTEM.md
+- [ ] T023 [US1] Document token usage in `docs/tokens-usage-guide.md`: patterns for using tokens in components, examples from Button/Input/Card, dos and don'ts
 
 **Checkpoint**: Form component foundation (buttons, inputs, cards) uses tokens exclusively. No hardcoded values. Theme switching works seamlessly. Developers have a clear pattern to follow.
 
