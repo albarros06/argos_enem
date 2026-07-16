@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/api";
 import { getBalance } from "@/modules/credits";
+import { isValidCpfCnpj, sanitizeCpfCnpj } from "@/lib/cpfCnpj";
 import { billingProvider } from "./asaas";
 
 export { processAsaasWebhook } from "./webhooks";
@@ -52,6 +53,10 @@ export const subscribeSchema = z.object({
   planId: z.string().uuid(),
   method: z.enum(["card", "pix"]),
   card: cardSchema.optional(),
+  cpfCnpj: z
+    .string()
+    .refine(isValidCpfCnpj, "CPF ou CNPJ inválido.")
+    .transform(sanitizeCpfCnpj),
 });
 
 // Cria a assinatura no Asaas SEM conceder nada — direitos só chegam pelo
@@ -81,10 +86,16 @@ export async function subscribe(userId: string, input: z.infer<typeof subscribeS
     const customer = await billingProvider().createCustomer({
       name: user.name,
       email: user.email,
+      cpfCnpj: input.cpfCnpj,
       externalReference: user.id,
     });
     customerId = customer.id;
-    await prisma.user.update({ where: { id: userId }, data: { asaasCustomerId: customerId } });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { asaasCustomerId: customerId, cpfCnpj: input.cpfCnpj },
+    });
+  } else if (user.cpfCnpj !== input.cpfCnpj) {
+    await prisma.user.update({ where: { id: userId }, data: { cpfCnpj: input.cpfCnpj } });
   }
 
   const created = await billingProvider().createSubscription({

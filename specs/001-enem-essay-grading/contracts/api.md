@@ -64,7 +64,7 @@ invalid input → 400 with field-level details.
 |---|---|---|---|
 | GET | `/api/credits` | Balance | `{freeRemaining, quotaRemaining, cycleEndsAt?}` (FR-020) |
 | GET | `/api/billing/plans` | Active plans | `[{id, tier, name, priceCents, monthlyQuota}]` (paywall content — FR-021/022) |
-| POST | `/api/billing/subscribe` | Start subscription | body `{planId, method: "card"|"pix", card?: {…tokenized}}`; creates Asaas customer+subscription; returns `{status, pixQrCode?}`; entitlements only on webhook confirmation (FR-024) |
+| POST | `/api/billing/subscribe` | Start subscription | body `{planId, method: "card"|"pix", card?: {…tokenized}, cpfCnpj}`; `cpfCnpj` required by Asaas to create the customer; creates Asaas customer+subscription; returns `{status, pixQrCode?}`; entitlements only on webhook confirmation (FR-024) |
 | POST | `/api/billing/upgrade` | Entry → premium | prorated one-off charge (R4, FR-025/026); 409 if already premium |
 | POST | `/api/billing/cancel` | Cancel at period end | sets `cancelAtPeriodEnd` (FR-025) |
 | GET | `/api/billing/subscription` | Current subscription | `{tier, status, currentPeriodEnd, cancelAtPeriodEnd}` |

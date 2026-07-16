@@ -36,6 +36,7 @@ export interface BillingProvider {
   createCustomer(input: {
     name: string;
     email: string;
+    cpfCnpj: string;
     externalReference: string;
   }): Promise<{ id: string }>;
   createSubscription(
@@ -74,10 +75,16 @@ class AsaasProvider implements BillingProvider {
     });
   }
 
-  async createCustomer(input: { name: string; email: string; externalReference: string }) {
+  async createCustomer(input: {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    externalReference: string;
+  }) {
     const customer = await this.request<{ id: string }>("POST", "/customers", {
       name: input.name,
       email: input.email,
+      cpfCnpj: input.cpfCnpj,
       externalReference: input.externalReference,
     });
     return { id: customer.id };
