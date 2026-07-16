@@ -15,7 +15,7 @@ modelo de dados, contratos de API).
 - **App**: Next.js 15 (App Router) + TypeScript, um único projeto full-stack
 - **Banco**: PostgreSQL 16 via Prisma (imagens transitórias em Cloudflare R2)
 - **OCR**: Google Cloud Vision (`DOCUMENT_TEXT_DETECTION`)
-- **Correção**: Claude Sonnet 4.6 com rubrica em cache de prompt e saída JSON estruturada
+- **Correção**: Google Gemini (`gemini-2.5-pro`, configurável via `GRADING_MODEL_ID`) com rubrica como system instruction e saída JSON estruturada; provider Anthropic como fallback
 - **Auth**: Auth.js v5 (credentials + JWT) · **E-mail**: Resend · **Pagamentos**: Asaas REST v3
 - **Testes**: Vitest (unit + integração com Postgres de teste) e Playwright (E2E)
 

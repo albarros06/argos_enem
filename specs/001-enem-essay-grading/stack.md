@@ -12,7 +12,7 @@ modular structure, easy maintainability, scale-ready, low cost.
 | Web stack | **Next.js full-stack (TypeScript)**, deployed as a long-running Node server | One language end-to-end, one app, one deploy; App Router pages + API route handlers. Fewest moving parts (Constitution II). |
 | Database | **PostgreSQL** | Default relational choice; fits users/submissions/evaluations/subscriptions model. |
 | OCR | **Google Cloud Vision** (`DOCUMENT_TEXT_DETECTION`) | ~US$1.50/1,000 images; dedicated handwriting recognition with Portuguese support; per-word confidence enables FR-007 (low-confidence detection without consuming credit). |
-| Grading LLM | **Claude Sonnet 4.6** (`claude-sonnet-4-6`) via Anthropic TypeScript SDK | US$3/US$15 per MTok ≈ US$0.03/essay with the ENEM rubric in a prompt-cached system block. Structured outputs (`output_config.format` JSON schema) guarantee parseable scores + annotations. Balanced cost-to-performance per spec. |
+| Grading LLM | **Google Gemini** (`gemini-2.5-pro`, via `@google/genai`) | Structured output via `responseJsonSchema` mirroring the Zod schema; ENEM rubric as system instruction (implicit caching). Provider auto-selected by model-id prefix, Anthropic kept as fallback. Superseded from Claude Sonnet on 2026-07-15 — see [002/gemini-grading-llm.md](../002-redacoes-semana/gemini-grading-llm.md). Re-measure cost and validate SC-003. |
 | Payments | **Asaas** | Brazilian subscription-first gateway: recurring card, Pix and boleto native in the subscriptions API; among the lowest fees in BR. Covers FR-023 (card + Pix) directly. |
 
 ## Supporting defaults (proposed, adjustable at plan time)
