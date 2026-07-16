@@ -13,6 +13,15 @@ import {
 } from "@/modules/credits";
 import { extractFromStorage } from "@/modules/transcription";
 import { startGrading } from "@/modules/grading";
+import { getActiveTier } from "@/modules/billing";
+import {
+  getActiveTheme,
+  getEntryByUserAndTheme,
+  getEntryBySubmission,
+  createEntry,
+  deleteEntry,
+  setDisplayAs,
+} from "@/modules/weekly";
 import { countEssayLines } from "@/lib/text";
 import { assertTransition } from "./stateMachine";
 
@@ -26,11 +35,40 @@ export const createSubmissionSchema = z.object({
   contentType: z.string(),
   sizeBytes: z.number().int().positive(),
   force: z.boolean().optional(),
+  weeklyThemeId: z.string().uuid().optional(),
 });
 
 export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
 
 export async function createSubmission(userId: string, input: CreateSubmissionInput) {
+  // Participação na redação da semana: exclusiva de assinantes premium, tema
+  // ativo e uma única submissão por tema (FR-009, FR-010, FR-012). Verificado
+  // antes do paywall para que não-premium recebam a mensagem correta.
+  let weeklyThemeId: string | undefined;
+  let weeklyThemeTitle: string | undefined;
+  if (input.weeklyThemeId) {
+    if ((await getActiveTier(userId)) !== "premium") {
+      throw new ApiError(
+        "PREMIUM_REQUIRED",
+        402,
+        "A redação da semana é exclusiva para assinantes do plano premium.",
+      );
+    }
+    const activeTheme = await getActiveTheme();
+    if (!activeTheme || activeTheme.id !== input.weeklyThemeId) {
+      throw new ApiError("THEME_NOT_ACTIVE", 409, "O tema desta semana não está mais ativo.");
+    }
+    if (await getEntryByUserAndTheme(activeTheme.id, userId)) {
+      throw new ApiError(
+        "ALREADY_ENTERED",
+        409,
+        "Você já enviou uma redação para o tema desta semana.",
+      );
+    }
+    weeklyThemeId = activeTheme.id;
+    weeklyThemeTitle = activeTheme.title;
+  }
+
   // Paywall antes de qualquer processamento de upload (FR-021).
   const balance = await getBalance(userId);
   if (balance.freeRemaining + balance.quotaRemaining <= 0) {
@@ -74,21 +112,32 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     }
     themeText = theme.title;
   }
+  // O tema da redação da semana define o enunciado da submissão.
+  if (weeklyThemeTitle) {
+    themeText = weeklyThemeTitle;
+  }
 
   const id = crypto.randomUUID();
   const extension = input.contentType === "image/png" ? "png" : "jpg";
   const imageKey = `essays/${userId}/${id}.${extension}`;
 
-  await prisma.submission.create({
-    data: {
-      id,
-      userId,
-      themeId: input.themeId,
-      themeText,
-      imageKey,
-      imageSha256: input.imageSha256.toLowerCase(),
-      status: "pending",
-    },
+  // A submissão e o vínculo com o tema da semana são criados juntos para que a
+  // constraint única reserve a vaga já no início do fluxo (FR-012).
+  await prisma.$transaction(async (tx) => {
+    await tx.submission.create({
+      data: {
+        id,
+        userId,
+        themeId: input.themeId,
+        themeText,
+        imageKey,
+        imageSha256: input.imageSha256.toLowerCase(),
+        status: "pending",
+      },
+    });
+    if (weeklyThemeId) {
+      await createEntry(weeklyThemeId, userId, id, tx);
+    }
   });
 
   const uploadUrl = await storage().presignUpload(imageKey, input.contentType);
@@ -110,6 +159,8 @@ export async function markUploaded(userId: string, submissionId: string) {
   const outcome = await extractFromStorage(submission.imageKey);
   if (!outcome.ok) {
     await deleteImage(submission.imageKey);
+    // Falha de extração não consome crédito; libera a vaga no tema da semana.
+    await deleteEntry(submission.id);
     return prisma.submission.update({
       where: { id: submission.id },
       data: { status: "failed", failureReason: outcome.reason, imageKey: null },
@@ -133,6 +184,7 @@ export async function confirmTranscription(
   userId: string,
   submissionId: string,
   confirmedText: string,
+  weeklyDisplayAs?: "real" | "anonymous",
 ) {
   const submission = await ownedSubmission(userId, submissionId);
   assertTransition(submission.status, "grading");
@@ -141,6 +193,17 @@ export async function confirmTranscription(
   });
   const rawText = transcription?.rawText ?? "";
   validateConfirmedText(rawText, confirmedText);
+
+  // Submissão vinculada ao tema da semana exige a escolha de exibição no
+  // ranking (nome ou anônimo) na confirmação (FR-013).
+  const weeklyEntry = await getEntryBySubmission(submission.id);
+  if (weeklyEntry && !weeklyDisplayAs) {
+    throw new ApiError(
+      "DISPLAY_AS_REQUIRED",
+      400,
+      "Escolha como deseja aparecer no ranking: com seu nome ou de forma anônima.",
+    );
+  }
 
   // Reivindica a transição primeiro (à prova de confirmações concorrentes),
   // depois consome o crédito; reverte a reivindicação se não houver saldo.
@@ -181,6 +244,10 @@ export async function confirmTranscription(
     await prisma.submission.update({ where: { id: submission.id }, data: { imageKey: null } });
   }
 
+  if (weeklyEntry && weeklyDisplayAs) {
+    await setDisplayAs(submission.id, weeklyDisplayAs);
+  }
+
   startGrading(submission.id);
   return prisma.submission.findUniqueOrThrow({ where: { id: submission.id } });
 }
@@ -191,6 +258,8 @@ export async function abandonSubmission(userId: string, submissionId: string) {
   if (submission.imageKey) {
     await deleteImage(submission.imageKey);
   }
+  // Abandono libera a vaga no tema da semana (FR-012).
+  await deleteEntry(submission.id);
   return prisma.submission.update({
     where: { id: submission.id },
     data: { status: "expired", imageKey: null },
@@ -203,6 +272,7 @@ export async function getSubmissionView(userId: string, submissionId: string) {
     include: {
       transcription: true,
       evaluation: { include: { annotations: true } },
+      weeklyEntry: { include: { theme: { select: { title: true } } } },
     },
   });
   if (!submission || submission.userId !== userId) {
@@ -222,6 +292,9 @@ export async function getSubmissionView(userId: string, submissionId: string) {
     failureReason: submission.failureReason,
     themeText: submission.themeText,
     createdAt: submission.createdAt,
+    weekly: submission.weeklyEntry
+      ? { themeTitle: submission.weeklyEntry.theme.title, displayAs: submission.weeklyEntry.displayAs }
+      : null,
     transcription: submission.transcription
       ? {
           rawText: submission.transcription.rawText,

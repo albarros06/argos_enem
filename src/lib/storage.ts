@@ -10,6 +10,7 @@ import { logger } from "@/lib/logger";
 
 export interface StorageAdapter {
   presignUpload(key: string, contentType: string): Promise<string>;
+  presignDownload(key: string): Promise<string>;
   putObject(key: string, bytes: Buffer, contentType: string): Promise<void>;
   getObject(key: string): Promise<Buffer>;
   deleteObject(key: string): Promise<void>;
@@ -32,6 +33,11 @@ class R2Storage implements StorageAdapter {
       ContentType: contentType,
     });
     return getSignedUrl(this.client, command, { expiresIn: 600 });
+  }
+
+  presignDownload(key: string): Promise<string> {
+    const command = new GetObjectCommand({ Bucket: env().R2_BUCKET, Key: key });
+    return getSignedUrl(this.client, command, { expiresIn: 3600 });
   }
 
   async putObject(key: string, bytes: Buffer, contentType: string): Promise<void> {
@@ -75,6 +81,10 @@ class FakeStorage implements StorageAdapter {
   }
 
   async presignUpload(key: string): Promise<string> {
+    return `${env().APP_URL}/api/fake-upload/${encodeURIComponent(key)}`;
+  }
+
+  async presignDownload(key: string): Promise<string> {
     return `${env().APP_URL}/api/fake-upload/${encodeURIComponent(key)}`;
   }
 

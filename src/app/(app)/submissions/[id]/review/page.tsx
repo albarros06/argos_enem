@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 interface SubmissionView {
   status: string;
   transcription?: { rawText: string; meanConfidence: number };
+  weekly?: { themeTitle: string; displayAs: "real" | "anonymous" } | null;
 }
 
 // Revisão da transcrição: o aluno corrige erros de OCR antes de confirmar.
@@ -18,6 +19,8 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [working, setWorking] = useState(false);
+  const [weekly, setWeekly] = useState<{ themeTitle: string } | null>(null);
+  const [displayAs, setDisplayAs] = useState<"real" | "anonymous">("real");
 
   useEffect(() => {
     fetch(`/api/submissions/${id}`)
@@ -32,6 +35,10 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
         }
         setText(submission.transcription?.rawText ?? "");
         setConfidence(submission.transcription?.meanConfidence ?? null);
+        if (submission.weekly) {
+          setWeekly({ themeTitle: submission.weekly.themeTitle });
+          setDisplayAs(submission.weekly.displayAs);
+        }
         setLoaded(true);
       })
       .catch((loadError) => setError(loadError.message));
@@ -43,7 +50,10 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
     const response = await fetch(`/api/submissions/${id}/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirmedText: text }),
+      body: JSON.stringify({
+        confirmedText: text,
+        ...(weekly ? { weeklyDisplayAs: displayAs } : {}),
+      }),
     });
     if (response.ok) {
       router.push(`/submissions/${id}`);
@@ -96,6 +106,30 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
         rows={18}
         aria-label="Texto extraído da redação"
       />
+      {weekly && (
+        <fieldset>
+          <legend>Redação da semana: {weekly.themeTitle}</legend>
+          <p className="muted">Como você quer aparecer no ranking público?</p>
+          <label>
+            <input
+              type="radio"
+              name="displayAs"
+              checked={displayAs === "real"}
+              onChange={() => setDisplayAs("real")}
+            />{" "}
+            Com meu nome
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="displayAs"
+              checked={displayAs === "anonymous"}
+              onChange={() => setDisplayAs("anonymous")}
+            />{" "}
+            De forma anônima
+          </label>
+        </fieldset>
+      )}
       {error && <p className="error">{error}</p>}
       <p>
         <button onClick={() => void confirm()} disabled={working}>

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { business } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { storage } from "@/lib/storage";
+import { deleteEntry } from "@/modules/weekly";
 
 // Submissões paradas antes da confirmação por mais de 24h são expiradas e suas
 // imagens apagadas (FR-027a, R5). Roda em timer iniciado em instrumentation.ts.
@@ -22,6 +23,7 @@ export async function sweepAbandonedSubmissions(): Promise<number> {
         });
       }
     }
+    await deleteEntry(submission.id);
     await prisma.submission.update({
       where: { id: submission.id },
       data: { status: "expired", imageKey: null },

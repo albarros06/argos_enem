@@ -21,6 +21,25 @@ export async function listActivePlans() {
   }));
 }
 
+// Plano vigente do usuário (ou null se sem assinatura ativa). Considera o
+// acesso ainda válido durante carência/cancelamento até o fim do período,
+// alinhado às regras de consumo de crédito (modules/credits).
+export async function getActiveTier(userId: string): Promise<"entry" | "premium" | null> {
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId },
+    include: { plan: true },
+  });
+  if (!subscription) {
+    return null;
+  }
+  const accessibleStatuses = ["active", "past_due", "canceled"];
+  const withinPeriod = new Date() < subscription.currentPeriodEnd;
+  if (!accessibleStatuses.includes(subscription.status) || !withinPeriod) {
+    return null;
+  }
+  return subscription.plan.tier;
+}
+
 const cardSchema = z.object({
   holderName: z.string().min(1),
   number: z.string().min(13),
