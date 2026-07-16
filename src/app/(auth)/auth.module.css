@@ -59,6 +59,15 @@
   border: 1px solid var(--color-error);
 }
 
+.message {
+  font-family: var(--type-family-body);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-xl) 0;
+  text-align: center;
+}
+
 .footer {
   display: flex;
   justify-content: center;

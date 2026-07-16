@@ -7,7 +7,7 @@ import Link from "next/link";
 import Input from "@/components/Input/Input";
 import Button from "@/components/Button/Button";
 import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
-import styles from "./login.module.css";
+import styles from "../auth.module.css";
 
 function LoginForm() {
   const router = useRouter();
