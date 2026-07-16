@@ -22,3 +22,5 @@ export function Card({ children, variant = 'default', className }: CardProps) {
     </div>
   );
 }
+
+export default Card;

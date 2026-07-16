@@ -18,3 +18,5 @@ export function Badge({ variant = 'primary', children, className }: BadgeProps) 
     </span>
   );
 }
+
+export default Badge;

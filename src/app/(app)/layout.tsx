@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { CreditBalance } from "@/components/CreditBalance";
 import { RenewalBanner } from "@/components/RenewalBanner";
 import { LogoutButton } from "@/components/LogoutButton";
+import Button from "@/components/Button/Button";
+import styles from "./app-layout.module.css";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -21,21 +23,39 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <>
-      <nav className="appnav">
-        <Link href="/dashboard">Painel</Link>
-        <Link href="/submissions">Redações</Link>
-        <Link href="/redacoes-semana">Redação da semana</Link>
-        <Link className="button" href="/submissions/new">
-          Nova redação
-        </Link>
-        <span style={{ marginLeft: "auto", display: "flex", gap: "0.8rem", alignItems: "center" }}>
+      <nav className={styles.nav}>
+        <div className={styles.navContent}>
+          <div className={styles.navLinks}>
+            <Link href="/dashboard" className={styles.navLink}>
+              Painel
+            </Link>
+            <Link href="/submissions" className={styles.navLink}>
+              Redações
+            </Link>
+            <Link href="/redacoes-semana" className={styles.navLink}>
+              Redação da semana
+            </Link>
+          </div>
+          <Link href="/submissions/new">
+            <Button variant="primary" size="md">
+              Nova redação
+            </Button>
+          </Link>
+        </div>
+        <div className={styles.navActions}>
           <CreditBalance />
-          {user?.role === "admin" && <Link href="/admin">Admin</Link>}
-          <Link href="/billing/manage">Assinatura</Link>
+          {user?.role === "admin" && (
+            <Link href="/admin" className={styles.navLink}>
+              Admin
+            </Link>
+          )}
+          <Link href="/billing/manage" className={styles.navLink}>
+            Assinatura
+          </Link>
           <LogoutButton />
-        </span>
+        </div>
       </nav>
-      <main>
+      <main className={styles.main}>
         <RenewalBanner />
         {children}
       </main>

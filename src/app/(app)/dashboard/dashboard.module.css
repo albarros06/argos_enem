@@ -1,0 +1,152 @@
+.title {
+  font-family: var(--type-family-display);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.subtitle {
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-xl) 0;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.emptyText {
+  font-family: var(--type-family-body);
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.cardText {
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.chartTitle {
+  font-family: var(--type-family-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-lg) 0;
+}
+
+.sectionTitle {
+  font-family: var(--type-family-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: var(--space-xl) 0 var(--space-md) 0;
+}
+
+.competencyHint {
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-lg) 0;
+}
+
+.competencyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.competencyCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.competencyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.competencyHeader strong {
+  font-family: var(--type-family-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.badges {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.competencyStats {
+  font-family: var(--type-family-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.submissionList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.submissionItem {
+  background-color: var(--color-surface-fg);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-default);
+  transition: all 150ms ease;
+}
+
+.submissionItem:hover {
+  background-color: var(--color-surface-bg);
+  border-color: var(--color-primary-brand);
+}
+
+.submissionLink {
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  color: var(--color-primary-brand);
+  text-decoration: none;
+  transition: opacity 150ms ease;
+  display: block;
+}
+
+.submissionLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 24px;
+  }
+
+  .sectionTitle {
+    font-size: 18px;
+  }
+
+  .competencyGrid {
+    grid-template-columns: 1fr;
+  }
+}
