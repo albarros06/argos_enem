@@ -16,12 +16,8 @@ export function getThemePreference(): Theme {
     return stored as Theme;
   }
 
-  // Fall back to system preference
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-
-  return 'dark'; // Default fallback
+  // Light is the default experience; users can opt into dark via the toggle.
+  return 'light';
 }
 
 /**

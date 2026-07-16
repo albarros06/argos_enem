@@ -126,6 +126,7 @@ function ScoreChart({ series }: { series: number[] }) {
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       aria-label="Evolução da nota total"
+      className={styles.chart}
       style={{ width: "100%", height: "auto" }}
     >
       <line x1={padding} y1={y(0)} x2={width - padding} y2={y(0)} stroke="#e2e8f0" />
