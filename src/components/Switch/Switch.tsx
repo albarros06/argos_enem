@@ -3,6 +3,7 @@
  * Uses design tokens exclusively (no hardcoded values)
  */
 
+import { useId } from 'react';
 import styles from './Switch.module.css';
 
 interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -10,7 +11,8 @@ interface SwitchProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 
 }
 
 export function Switch({ label, id, ...props }: SwitchProps) {
-  const switchId = id || `switch-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const switchId = id || generatedId;
 
   return (
     <div className={styles.wrapper}>

@@ -131,7 +131,7 @@ ${analyses
 - **Hardcoded Values**: ${a.hardcodedValues.length}
 ${a.hardcodedValues.length > 0 ? `  - Examples: ${a.hardcodedValues.slice(0, 5).join(', ')}` : '  - None (✅)'}
 - **Status**: ${a.hardcodedValues.length === 0 ? '✅ PASS' : '⚠️ REVIEW'}
-`;
+`
   )
   .join('\n')}
 

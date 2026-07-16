@@ -5,7 +5,7 @@
 
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useSyncExternalStore } from 'react';
 import { type Theme, getThemePreference, setTheme, onThemeChange } from '@/lib/theme';
 
 interface ThemeContextType {
@@ -15,35 +15,18 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// No servidor não existe localStorage nem matchMedia. Este valor é o que o HTML
+// enviado contém e o que a hidratação compara; a preferência real substitui-o no
+// primeiro render seguinte, sem divergência.
+const getServerTheme = (): Theme => 'dark';
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // Get initial theme preference
-    const initialTheme = getThemePreference();
-    setThemeState(initialTheme);
-    setMounted(true);
-
-    // Listen for theme changes
-    const unsubscribe = onThemeChange((newTheme) => {
-      setThemeState(newTheme);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const handleSetTheme = (newTheme: Theme) => {
-    if (mounted) {
-      setTheme(newTheme);
-      setThemeState(newTheme);
-    }
-  };
+  // setTheme (lib/theme) grava no localStorage e dispara 'theme-change', que
+  // onThemeChange escuta — a releitura do snapshot fecha o ciclo.
+  const theme = useSyncExternalStore(onThemeChange, getThemePreference, getServerTheme);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>
   );
 }
 
