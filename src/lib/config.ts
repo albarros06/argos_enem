@@ -5,6 +5,7 @@ const envSchema = z.object({
   AUTH_SECRET: z.string().min(1),
   APP_URL: z.string().url().default("http://localhost:3000"),
   ANTHROPIC_API_KEY: z.string().default(""),
+  GEMINI_API_KEY: z.string().default(""),
   GOOGLE_APPLICATION_CREDENTIALS_JSON: z.string().default(""),
   R2_ENDPOINT: z.string().default(""),
   R2_ACCESS_KEY_ID: z.string().default(""),
@@ -30,7 +31,8 @@ export const business = {
   confirmLengthRatioMax: floatFromEnv("CONFIRM_LENGTH_RATIO_MAX", 2),
   gracePeriodDays: intFromEnv("GRACE_PERIOD_DAYS", 7),
   abandonedSweepHours: intFromEnv("ABANDONED_SWEEP_HOURS", 24),
-  gradingModelId: process.env.GRADING_MODEL_ID ?? "claude-sonnet-4-6",
+  // Provider é selecionado pelo prefixo do id (gemini-* -> Gemini, claude-* -> Anthropic).
+  gradingModelId: process.env.GRADING_MODEL_ID ?? "gemini-2.5-pro",
   allowedImageTypes: ["image/jpeg", "image/png"],
   verificationTokenTtlHours: 24,
   resetTokenTtlHours: 2,
