@@ -43,7 +43,11 @@ function webhookRequest(body: unknown, token = WEBHOOK_TOKEN): Request {
 async function subscribePix(userId: string, planId: string) {
   actAs(userId);
   const response = await subscribeRoute(
-    jsonRequest("/api/billing/subscribe", "POST", { planId, method: "pix" }),
+    jsonRequest("/api/billing/subscribe", "POST", {
+      planId,
+      method: "pix",
+      cpfCnpj: "39053344705",
+    }),
     routeContext({}),
   );
   expect(response.status).toBe(200);

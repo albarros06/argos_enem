@@ -58,6 +58,7 @@ function CheckoutForm() {
     setError(null);
     setSubmitting(true);
     const form = new FormData(event.currentTarget);
+    const cpfCnpj = String(form.get("cpfCnpj") ?? "").replace(/\D/g, "");
     const card =
       method === "card"
         ? {
@@ -71,7 +72,7 @@ function CheckoutForm() {
     const response = await fetch("/api/billing/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ planId: plan.id, method, card }),
+      body: JSON.stringify({ planId: plan.id, method, card, cpfCnpj }),
     });
     setSubmitting(false);
     if (!response.ok) {
@@ -136,6 +137,15 @@ function CheckoutForm() {
         correções mensais
       </div>
       <form onSubmit={handleSubmit}>
+        <label htmlFor="cpfCnpj">CPF ou CNPJ</label>
+        <input
+          id="cpfCnpj"
+          name="cpfCnpj"
+          inputMode="numeric"
+          placeholder="Somente números"
+          required
+        />
+
         <label>Forma de pagamento</label>
         <p>
           <label style={{ display: "inline", fontWeight: 400 }}>
