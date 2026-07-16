@@ -3,9 +3,11 @@
  * Uses design tokens exclusively (no hardcoded values)
  */
 
+import { useId } from 'react';
 import styles from './Input.module.css';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+// `size` nativo é number; aqui é a escala do design system, então é substituído.
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string;
   error?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -19,7 +21,8 @@ export function Input({
   className,
   ...props
 }: InputProps) {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const inputId = id || generatedId;
 
   return (
     <div className={styles.wrapper}>

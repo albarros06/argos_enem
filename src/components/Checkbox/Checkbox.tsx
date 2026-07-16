@@ -3,6 +3,7 @@
  * Uses design tokens exclusively (no hardcoded values)
  */
 
+import { useId } from 'react';
 import styles from './Checkbox.module.css';
 
 interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -10,7 +11,8 @@ interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>
 }
 
 export function Checkbox({ label, id, ...props }: CheckboxProps) {
-  const checkboxId = id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const checkboxId = id || generatedId;
 
   return (
     <div className={styles.wrapper}>

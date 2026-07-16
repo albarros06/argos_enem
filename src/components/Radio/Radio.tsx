@@ -3,6 +3,7 @@
  * Uses design tokens exclusively (no hardcoded values)
  */
 
+import { useId } from 'react';
 import styles from './Radio.module.css';
 
 interface RadioProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -10,7 +11,8 @@ interface RadioProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
 }
 
 export function Radio({ label, id, ...props }: RadioProps) {
-  const radioId = id || `radio-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const radioId = id || generatedId;
 
   return (
     <div className={styles.wrapper}>
