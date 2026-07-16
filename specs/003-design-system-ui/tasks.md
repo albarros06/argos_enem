@@ -77,10 +77,10 @@
 - [x] T025 [P] [US2] Refactor `src/components/Tooltip/Tooltip.tsx` and `Tooltip.module.css` to use tokens: background, text, shadow (`--shadow-md`), radius, spacing
 - [x] T026 [P] [US2] Refactor `src/components/Toast/Toast.tsx` and `Toast.module.css` to use tokens: background (per semantic color), text, shadow (`--shadow-lg`), radius, spacing
 - [x] T027 [P] [US2] Refactor `src/components/Tabs/Tabs.tsx` and `Tabs.module.css` to use tokens: borders, text colors, spacing, radius (none typically for tabs)
-- [x] T028 [US2] Create audit script `scripts/audit-component-tokens.ts`: scan `src/components/` for hardcoded colors, sizes; generate report of token coverage per component
-- [x] T029 [US2] Run audit on P1 + P2 components; document findings in `docs/component-audit-p2.md`
-- [x] T030 [US2] Update component storybook (if exists) or create component gallery in `src/app/design-system/components/index.tsx` showing all refactored components in both themes
-- [x] T031 [US2] Write visual regression test `tests/integration/component-tokens-p2.test.ts`: render all P2 components (Badge, Tooltip, Toast, Tabs) in dark and light themes; screenshot both
+- [ ] T028 [US2] Create audit script `scripts/audit-component-tokens.ts`: scan `src/components/` for hardcoded colors, sizes; generate report of token coverage per component
+- [ ] T029 [US2] Run audit on P1 + P2 components; document findings in `docs/component-audit-p2.md`
+- [ ] T030 [US2] Update component storybook (if exists) or create component gallery in `src/app/design-system/components/index.tsx` showing all refactored components in both themes
+- [ ] T031 [US2] Write visual regression test `tests/integration/component-tokens-p2.test.ts`: render all P2 components (Badge, Tooltip, Toast, Tabs) in dark and light themes; screenshot both
 
 **Checkpoint**: Feedback and navigation components use tokens exclusively. Designer can navigate app and verify consistency. Component gallery provides single source of truth for UI patterns.
 
@@ -100,10 +100,10 @@
 - [x] T035 [P] [US3] Refactor `src/components/Checkbox/Checkbox.tsx` and `Checkbox.module.css` to use tokens: border, checkmark color, spacing, radius (small)
 - [x] T036 [P] [US3] Refactor `src/components/Radio/Radio.tsx` and `Radio.module.css` to use tokens: border, dot color, spacing, radius (pill for outer, none for inner)
 - [x] T037 [P] [US3] Refactor `src/components/Switch/Switch.tsx` and `Switch.module.css` to use tokens: background (active: brand, inactive: border), radius (pill), shadow, spacing
-- [x] T038 [US3] Run full audit script on all components; generate comprehensive report in `docs/component-audit-p3.md`; ensure 100% token coverage (SC-001)
+- [ ] T038 [US3] Run full audit script on all components; generate comprehensive report in `docs/component-audit-p3.md`; ensure 100% token coverage (SC-001)
 - [x] T039 [US3] Create theme switching UI (already in T016 ThemeToggle); integrate into app header/navigation so end-users can toggle themes
-- [x] T040 [US3] Test theme switch performance: measure time from click to visual update across entire app; target < 100ms (SC-007)
-- [x] T041 [US3] Write end-to-end test `tests/e2e/theme-switching.test.ts`: navigate app, toggle theme, verify all components update instantly and visually match both themes
+- [ ] T040 [US3] Test theme switch performance: measure time from click to visual update across entire app; target < 100ms (SC-007)
+- [ ] T041 [US3] Write end-to-end test `tests/e2e/theme-switching.test.ts`: navigate app, toggle theme, verify all components update instantly and visually match both themes
 
 **Checkpoint**: All UI components use tokens. Theme switching is instant and seamless. End-users experience unified visual language across entire app.
 

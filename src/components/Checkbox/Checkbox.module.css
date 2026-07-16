@@ -1,0 +1,50 @@
+/* Design System: Checkbox Styles */
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.input {
+  display: none;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.checkmark {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-bg);
+  transition: all 150ms ease;
+  align-items: center;
+  justify-content: center;
+}
+
+.input:checked + .label .checkmark {
+  background-color: var(--color-primary-brand);
+  border-color: var(--color-primary-brand);
+  color: white;
+}
+
+.input:checked + .label .checkmark::after {
+  content: '✓';
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.input:disabled + .label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

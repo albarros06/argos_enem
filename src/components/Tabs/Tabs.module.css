@@ -1,0 +1,39 @@
+/* Design System: Tabs Styles */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.tabList {
+  display: flex;
+  gap: var(--space-md);
+  border-bottom: 1px solid var(--color-border-default);
+  position: relative;
+}
+
+.tab {
+  padding: var(--space-sm) var(--space-md);
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.tab:hover:not(.active) {
+  color: var(--color-text-primary);
+}
+
+.tab.active {
+  color: var(--color-primary-brand);
+  border-bottom-color: var(--color-primary-brand);
+}
+
+.content {
+  padding: var(--space-md) 0;
+}

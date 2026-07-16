@@ -1,0 +1,57 @@
+/* Design System: Switch (Toggle) Styles */
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.input {
+  display: none;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  color: var(--color-text-primary);
+}
+
+.toggle {
+  display: inline-flex;
+  width: 44px;
+  height: 24px;
+  background-color: var(--color-border-default);
+  border-radius: var(--radius-pill);
+  position: relative;
+  transition: background-color 150ms ease;
+  align-items: center;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  left: 2px;
+  transition: left 150ms ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.input:checked + .label .toggle {
+  background-color: var(--color-primary-brand);
+}
+
+.input:checked + .label .toggle::after {
+  left: 22px;
+}
+
+.input:disabled + .label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
