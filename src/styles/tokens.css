@@ -1,0 +1,58 @@
+/**
+ * Design System: CSS Custom Properties
+ * Dark theme (default)
+ */
+
+:root {
+  /* Colors */
+  --color-primary-brand: #2E5BFF;
+  --color-secondary-violet: #8A3FFE;
+
+  --color-surface-bg: #0E0E13;
+  --color-surface-fg: #1A1A23;
+
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #A0A0A0;
+  --color-text-tertiary: #606060;
+
+  --color-border-default: rgba(255, 255, 255, 0.08);
+
+  --color-error: #FF4C4C;
+  --color-warning: #FFB800;
+  --color-success: #4CAF50;
+  --color-info: #2E5BFF;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 26px;
+  --radius-pill: 999px;
+  --radius-button: 8px;
+  --radius-input: 8px;
+  --radius-card: 18px;
+  --radius-modal: 22px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.20);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 24px rgba(142, 63, 254, 0.2);
+
+  /* Typography (fonts) */
+  --type-family-display: "Space Grotesk", sans-serif;
+  --type-family-body: "Space Grotesk", sans-serif;
+  --type-family-mono: "IBM Plex Mono", monospace;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(90deg, #2E5BFF 0%, #8A3FFE 100%);
+}

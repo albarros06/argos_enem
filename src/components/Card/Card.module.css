@@ -1,0 +1,27 @@
+/* Design System: Card Styles */
+/* All values use CSS custom properties (design tokens) */
+
+.card {
+  background-color: var(--color-surface-fg);
+  border-radius: var(--radius-card);
+  padding: var(--space-lg);
+
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.variant-default {
+  border: 1px solid var(--color-border-default);
+}
+
+.variant-elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.variant-outlined {
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-surface-bg);
+}
+
+.variant-elevated:hover {
+  box-shadow: var(--shadow-lg);
+}

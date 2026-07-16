@@ -1,0 +1,38 @@
+/**
+ * Design System: Button Component
+ * Uses design tokens exclusively (no hardcoded values)
+ */
+
+import styles from './Button.module.css';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  children: React.ReactNode;
+}
+
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  className,
+  children,
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      className={[
+        styles.button,
+        styles[`variant-${variant}`],
+        styles[`size-${size}`],
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default Button;

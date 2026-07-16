@@ -1,0 +1,48 @@
+/* Design System: Toast Styles */
+.toast {
+  position: fixed;
+  bottom: var(--space-lg);
+  right: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--type-family-body);
+  font-size: 14px;
+  z-index: 2000;
+  animation: slideIn 300ms ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.type-info {
+  background-color: var(--color-info);
+  color: white;
+}
+
+.type-success {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.type-warning {
+  background-color: var(--color-warning);
+  color: white;
+}
+
+.type-error {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.toast p {
+  margin: 0;
+}

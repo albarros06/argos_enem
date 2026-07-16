@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getDashboard } from "@/modules/dashboard";
+import Card from "@/components/Card/Card";
+import Badge from "@/components/Badge/Badge";
+import Button from "@/components/Button/Button";
+import styles from "./dashboard.module.css";
 
 const COMPETENCY_LABELS: Record<number, string> = {
   1: "Norma culta",
@@ -21,15 +25,17 @@ export default async function DashboardPage() {
   if (submissionCount === 0) {
     return (
       <>
-        <h1>Seu progresso</h1>
-        <div className="card">
-          <p>Você ainda não tem redações corrigidas.</p>
-          <p>
-            <Link className="button" href="/submissions/new">
-              Enviar minha primeira redação
+        <h1 className={styles.title}>Seu progresso</h1>
+        <Card>
+          <div className={styles.emptyState}>
+            <p className={styles.emptyText}>Você ainda não tem redações corrigidas.</p>
+            <Link href="/submissions/new">
+              <Button variant="primary" size="lg">
+                Enviar minha primeira redação
+              </Button>
             </Link>
-          </p>
-        </div>
+          </div>
+        </Card>
       </>
     );
   }
@@ -40,55 +46,63 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <h1>Seu progresso</h1>
-      <p className="muted">
+      <h1 className={styles.title}>Seu progresso</h1>
+      <p className={styles.subtitle}>
         {submissionCount} redação{submissionCount > 1 ? "ões" : ""} corrigida
         {submissionCount > 1 ? "s" : ""}
       </p>
 
       {submissionCount === 1 ? (
-        <div className="card">
-          <p>
+        <Card>
+          <p className={styles.cardText}>
             Sua primeira correção é a linha de base: nota{" "}
             <strong>{scoreSeries[0].totalScore}</strong>. Envie mais redações para acompanhar sua
             evolução.
           </p>
-        </div>
+        </Card>
       ) : (
-        <div className="card">
-          <h2>Evolução da nota total</h2>
+        <Card>
+          <h2 className={styles.chartTitle}>Evolução da nota total</h2>
           <ScoreChart series={scoreSeries.map((point) => point.totalScore)} />
-        </div>
+        </Card>
       )}
 
-      <h2>Competências</h2>
-      <p className="muted">
+      <h2 className={styles.sectionTitle}>Competências</h2>
+      <p className={styles.competencyHint}>
         Ponto forte: <strong>{COMPETENCY_LABELS[strongest.competency]}</strong> · A melhorar:{" "}
         <strong>{COMPETENCY_LABELS[weakest.competency]}</strong>
       </p>
-      {competencies.map((competency) => (
-        <div className="card" key={competency.competency}>
-          <strong>
-            C{competency.competency} — {COMPETENCY_LABELS[competency.competency]}
-          </strong>
-          {competency.competency === weakest.competency && (
-            <span className="badge warning"> a melhorar</span>
-          )}
-          {competency.competency === strongest.competency && (
-            <span className="badge success"> ponto forte</span>
-          )}
-          <p>
-            Última: <strong>{competency.latest}</strong> · Média: {competency.average} ·{" "}
-            {TREND_LABELS[competency.trend]}
-          </p>
-        </div>
-      ))}
+      <div className={styles.competencyGrid}>
+        {competencies.map((competency) => (
+          <Card key={competency.competency}>
+            <div className={styles.competencyCard}>
+              <div className={styles.competencyHeader}>
+                <strong>
+                  C{competency.competency} — {COMPETENCY_LABELS[competency.competency]}
+                </strong>
+                <div className={styles.badges}>
+                  {competency.competency === weakest.competency && (
+                    <Badge variant="warning">a melhorar</Badge>
+                  )}
+                  {competency.competency === strongest.competency && (
+                    <Badge variant="success">ponto forte</Badge>
+                  )}
+                </div>
+              </div>
+              <p className={styles.competencyStats}>
+                Última: <strong>{competency.latest}</strong> · Média: {competency.average} ·{" "}
+                {TREND_LABELS[competency.trend]}
+              </p>
+            </div>
+          </Card>
+        ))}
+      </div>
 
-      <h2>Correções anteriores</h2>
-      <ul>
+      <h2 className={styles.sectionTitle}>Correções anteriores</h2>
+      <ul className={styles.submissionList}>
         {[...scoreSeries].reverse().map((point) => (
-          <li key={point.submissionId}>
-            <Link href={`/submissions/${point.submissionId}`}>
+          <li key={point.submissionId} className={styles.submissionItem}>
+            <Link href={`/submissions/${point.submissionId}`} className={styles.submissionLink}>
               {new Date(point.date).toLocaleDateString("pt-BR")} — nota {point.totalScore}
             </Link>
           </li>
