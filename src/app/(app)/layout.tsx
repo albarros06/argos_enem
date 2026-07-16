@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { CreditBalance } from "@/components/CreditBalance";
 import { RenewalBanner } from "@/components/RenewalBanner";
 import { LogoutButton } from "@/components/LogoutButton";
+import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import Button from "@/components/Button/Button";
 import styles from "./app-layout.module.css";
 
@@ -43,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
         <div className={styles.navActions}>
+          <ThemeToggleClient />
           <CreditBalance />
           {user?.role === "admin" && (
             <Link href="/admin" className={styles.navLink}>

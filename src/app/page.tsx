@@ -1,10 +1,15 @@
 import Link from "next/link";
 import Button from "@/components/Button/Button";
+import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import styles from "./page.module.css";
 
 export default function HomePage() {
   return (
-    <main className={styles.container}>
+    <>
+      <div className={styles.themeToggleWrapper}>
+        <ThemeToggleClient />
+      </div>
+      <main className={styles.container}>
       <div className={styles.hero}>
         <h1 className={styles.title}>Argos — Correção de Redações ENEM</h1>
         <p className={styles.subtitle}>
@@ -26,5 +31,6 @@ export default function HomePage() {
         </div>
       </div>
     </main>
+    </>
   );
 }

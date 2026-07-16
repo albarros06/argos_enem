@@ -1,3 +1,10 @@
+.themeToggleWrapper {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-lg);
+  z-index: 100;
+}
+
 .container {
   min-height: 100vh;
   display: flex;
