@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Input from "@/components/Input/Input";
+import Button from "@/components/Button/Button";
+import styles from "../auth.module.css";
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
@@ -33,39 +36,49 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <main>
-        <h1>Confira seu e-mail</h1>
-        <p>
+      <div className={styles.card}>
+        <h1 className={styles.title}>Confira seu e-mail</h1>
+        <p className={styles.message}>
           Enviamos um link de confirmação para o seu e-mail. Confirme para começar a enviar
           redações.
         </p>
-        <p>
+        <div className={styles.footer}>
           <Link href="/login">Ir para o login</Link>
-        </p>
-      </main>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main>
-      <h1>Criar conta</h1>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="name">Nome</label>
-        <input id="name" name="name" required />
-        <label htmlFor="email">E-mail</label>
-        <input id="email" name="email" type="email" required />
-        <label htmlFor="password">Senha (mínimo 8 caracteres)</label>
-        <input id="password" name="password" type="password" minLength={8} required />
-        {error && <p className="error">{error}</p>}
-        <p>
-          <button type="submit" disabled={submitting}>
-            {submitting ? "Criando..." : "Criar conta"}
-          </button>
-        </p>
+    <div className={styles.card}>
+      <h1 className={styles.title}>Criar conta</h1>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <Input id="name" name="name" label="Nome" required disabled={submitting} />
+        <Input id="email" name="email" type="email" label="E-mail" required disabled={submitting} />
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          label="Senha (mínimo 8 caracteres)"
+          minLength={8}
+          required
+          disabled={submitting}
+        />
+        {error && <p className={styles.error}>{error}</p>}
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          disabled={submitting}
+          className={styles.submitButton}
+        >
+          {submitting ? "Criando..." : "Criar conta"}
+        </Button>
       </form>
-      <p className="muted">
-        Já tem conta? <Link href="/login">Entrar</Link>
-      </p>
-    </main>
+      <div className={styles.footer}>
+        <span>Já tem conta?</span>
+        <Link href="/login">Entrar</Link>
+      </div>
+    </div>
   );
 }
