@@ -9,6 +9,9 @@ const schema = z.object({
   weeklyDisplayAs: z.enum(["real", "anonymous"]).optional(),
 });
 
+// A correção roda em segundo plano via after(); dá folga para a chamada ao LLM.
+export const maxDuration = 60;
+
 export const POST = handleRoute<{ id: string }>(async (request, context) => {
   const user = await requireUser();
   const { id } = await context.params;

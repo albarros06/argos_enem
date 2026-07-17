@@ -9,7 +9,12 @@ import { deleteEntry } from "@/modules/weekly";
 export async function sweepAbandonedSubmissions(): Promise<number> {
   const cutoff = new Date(Date.now() - business.abandonedSweepHours * 60 * 60 * 1000);
   const abandoned = await prisma.submission.findMany({
-    where: { status: { in: ["pending", "awaiting_review"] }, updatedAt: { lt: cutoff } },
+    where: {
+      // transcribing entra aqui também: se a tarefa de OCR morreu antes de
+      // concluir, a submissão fica presa nesse estado e precisa ser varrida.
+      status: { in: ["pending", "transcribing", "awaiting_review"] },
+      updatedAt: { lt: cutoff },
+    },
   });
 
   for (const submission of abandoned) {

@@ -2,12 +2,15 @@ import type { SubmissionStatus } from "@prisma/client";
 import { ApiError } from "@/lib/api";
 
 // Máquina de estados da submissão — fonte única de verdade (data-model):
-// pending ──extração ok──▶ awaiting_review ──confirmação──▶ grading ──ok──▶ completed
-//    │ extração falha            │ abandono/sweep                │ falha LLM
-//    ▼                           ▼                               ▼
-//  failed                     expired                         failed (crédito devolvido)
+// pending ─upload─▶ transcribing ─OCR ok─▶ awaiting_review ─confirmação─▶ grading ─ok─▶ completed
+//    │ abandono          │ OCR falha            │ abandono/sweep              │ falha LLM
+//    ▼                   ▼                      ▼                             ▼
+//  expired             failed                 expired                      failed (crédito devolvido)
+// O OCR roda em segundo plano (transcribing): markUploaded reivindica o estado e
+// retorna na hora; a transcrição termina fora do request e move para awaiting_review.
 const transitions: Record<SubmissionStatus, SubmissionStatus[]> = {
-  pending: ["awaiting_review", "failed", "expired"],
+  pending: ["transcribing", "failed", "expired"],
+  transcribing: ["awaiting_review", "failed", "expired"],
   awaiting_review: ["grading", "expired"],
   grading: ["completed", "failed"],
   completed: [],

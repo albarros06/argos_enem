@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { business } from "@/lib/config";
+import { scheduleBackgroundTask } from "@/lib/background";
 import { countEssayLines } from "@/lib/text";
 import { refundCredit } from "@/modules/credits";
 import { deleteEntry } from "@/modules/weekly";
@@ -13,16 +14,10 @@ export { enqueueFakeGradingResult, defaultFakeEvaluation } from "./llm";
 export { anchorAnnotations } from "./anchoring";
 export { llmEvaluationSchema, validateEvaluationConsistency, RUBRIC_VERSION };
 
-// Dispara o pipeline como tarefa em segundo plano no próprio processo (R6).
-// Falhas são tratadas dentro de evaluateSubmission; aqui só garantimos que a
-// promise nunca rejeite sem log.
+// Dispara a correção fora do request. after() (via scheduleBackgroundTask) mantém
+// a função viva na Vercel até terminar; falhas são tratadas em evaluateSubmission.
 export function startGrading(submissionId: string): void {
-  void evaluateSubmission(submissionId).catch((error) => {
-    logger.error("grading_task_crashed", {
-      submissionId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  });
+  scheduleBackgroundTask("grading", () => evaluateSubmission(submissionId));
 }
 
 export async function evaluateSubmission(submissionId: string): Promise<void> {

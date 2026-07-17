@@ -24,6 +24,23 @@ async function sha256Hex(file: File): Promise<string> {
     .join("");
 }
 
+// Aguarda o OCR (que roda em segundo plano) sair de pending/transcribing. Devolve
+// o status terminal, ou "transcribing" se estourar o tempo de espera do cliente.
+async function pollTranscription(submissionId: string): Promise<string> {
+  const deadline = Date.now() + 90_000;
+  while (Date.now() < deadline) {
+    const response = await fetch(`/api/submissions/${submissionId}`);
+    if (response.ok) {
+      const { status } = await response.json();
+      if (status !== "pending" && status !== "transcribing") {
+        return status;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+  return "transcribing";
+}
+
 export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -108,8 +125,12 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
         const body = await uploadedResponse.json().catch(() => null);
         throw new Error(body?.error?.message ?? "Falha ao processar o arquivo.");
       }
-      const { status } = await uploadedResponse.json();
-      if (status === "awaiting_review") {
+
+      // O OCR roda em segundo plano; acompanhamos a submissão até sair de
+      // transcribing. Se demorar além do limite, mandamos para a página de
+      // detalhe, que segue atualizando sozinha.
+      const finalStatus = await pollTranscription(submissionId);
+      if (finalStatus === "awaiting_review") {
         router.push(`/submissions/${submissionId}/review`);
       } else {
         router.push(`/submissions/${submissionId}`);
