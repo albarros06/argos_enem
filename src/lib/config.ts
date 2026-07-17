@@ -42,7 +42,10 @@ export const business = {
   // OCR de imagens: gemini-* usa transcrição por LLM (ignora linhas/numeração do
   // papel); qualquer outro valor (ex.: "google-vision") mantém o Vision. PDFs
   // continuam sempre no Vision (batchAnnotateFiles) por causa da contagem de páginas.
-  imageOcrModelId: process.env.IMAGE_OCR_MODEL_ID ?? "gemini-3-flash-preview",
+  // Padrão revertido para Vision: a transcrição LLM roda inline no /uploaded e
+  // estourava o timeout da função (essay OCR síncrono). Reabilitar só quando o OCR
+  // for assíncrono; até lá: IMAGE_OCR_MODEL_ID=gemini-3-flash-preview para testar.
+  imageOcrModelId: process.env.IMAGE_OCR_MODEL_ID ?? "google-vision",
   imageOcrMaxOutputTokens: intFromEnv("IMAGE_OCR_MAX_OUTPUT_TOKENS", 4096),
   // Teto de saída do grading. Modelos com "thinking" (Gemini 3) consomem parte do
   // orçamento pensando; suba este valor se vir respostas vazias/truncadas.
