@@ -39,7 +39,7 @@ export const business = {
   abandonedSweepHours: intFromEnv("ABANDONED_SWEEP_HOURS", 24),
   // Provider é selecionado pelo prefixo do id (gemini-* -> Gemini, claude-* -> Anthropic).
   gradingModelId: process.env.GRADING_MODEL_ID ?? "gemini-2.5-pro",
-  allowedImageTypes: ["image/jpeg", "image/png"],
+  allowedUploadTypes: ["image/jpeg", "image/png", "application/pdf"],
   verificationTokenTtlHours: 24,
   resetTokenTtlHours: 2,
 };

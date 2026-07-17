@@ -75,16 +75,16 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     throw new InsufficientCreditsError();
   }
 
-  if (!business.allowedImageTypes.includes(input.contentType)) {
+  if (!business.allowedUploadTypes.includes(input.contentType)) {
     throw new ApiError(
       "VALIDATION_ERROR",
       400,
-      "Formato não suportado. Envie uma foto JPEG ou PNG.",
+      "Formato não suportado. Envie uma foto JPEG, PNG ou um arquivo PDF.",
     );
   }
   if (input.sizeBytes > business.maxUploadBytes) {
     const limitMb = Math.floor(business.maxUploadBytes / (1024 * 1024));
-    throw new ApiError("VALIDATION_ERROR", 400, `A imagem excede o limite de ${limitMb} MB.`);
+    throw new ApiError("VALIDATION_ERROR", 400, `O arquivo excede o limite de ${limitMb} MB.`);
   }
 
   if (!input.force) {
@@ -118,8 +118,7 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
   }
 
   const id = crypto.randomUUID();
-  const extension = input.contentType === "image/png" ? "png" : "jpg";
-  const imageKey = `essays/${userId}/${id}.${extension}`;
+  const imageKey = `essays/${userId}/${id}.${extensionFor(input.contentType)}`;
 
   // A submissão e o vínculo com o tema da semana são criados juntos para que a
   // constraint única reserve a vaga já no início do fluxo (FR-012).
@@ -384,6 +383,14 @@ function validateConfirmedText(rawText: string, confirmedText: string): void {
       "O texto confirmado difere demais do texto extraído. Corrija apenas os erros de leitura.",
     );
   }
+}
+
+// O sufixo da chave no storage identifica o tipo do arquivo enviado; a extração
+// roteia foto vs. PDF por ele (ver extractFromStorage).
+function extensionFor(contentType: string): string {
+  if (contentType === "application/pdf") return "pdf";
+  if (contentType === "image/png") return "png";
+  return "jpg";
 }
 
 async function deleteImage(imageKey: string): Promise<void> {

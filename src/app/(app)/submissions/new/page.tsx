@@ -33,7 +33,8 @@ export default async function NewSubmissionPage({
     <>
       <h1>{weeklyTheme ? "Redação da semana" : "Nova redação"}</h1>
       <p className="muted">
-        Fotografe sua redação manuscrita com boa iluminação, sem cortes nem sombras.
+        Fotografe sua redação manuscrita com boa iluminação, sem cortes nem sombras, ou envie um PDF
+        legível de uma página.
       </p>
       <NewSubmissionForm
         themes={themes}
