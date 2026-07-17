@@ -1,6 +1,8 @@
 import { ImageAnnotatorClient, protos } from "@google-cloud/vision";
+import { ThinkingLevel } from "@google/genai";
 import { business, env, fakeVendorsEnabled } from "@/lib/config";
 import { vertexClient } from "@/lib/vertex";
+import { logger } from "@/lib/logger";
 
 type FullTextAnnotation = protos.google.cloud.vision.v1.ITextAnnotation;
 
@@ -121,7 +123,19 @@ class GeminiImageTranscriptionProvider implements ImageTranscriptionProvider {
         temperature: 0, // transcrição reprodutível
         responseMimeType: "text/plain",
         maxOutputTokens: business.imageOcrMaxOutputTokens,
+        // Transcrição é cópia verbatim — não precisa de raciocínio. Sem isso, o
+        // "thinking" do Gemini 3 consome quase todo o maxOutputTokens e trunca o
+        // texto (finishReason MAX_TOKENS). LOW deixa o orçamento para o texto.
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
       },
+    });
+    // Visibilidade do custo/truncamento: finishReason e quanto foi pensamento vs texto.
+    const usage = response.usageMetadata;
+    logger.info("image_ocr_usage", {
+      model: business.imageOcrModelId,
+      finishReason: response.candidates?.[0]?.finishReason,
+      thoughtsTokens: usage?.thoughtsTokenCount,
+      outputTokens: usage?.candidatesTokenCount,
     });
     const text = response.text?.trim() ?? "";
     // Um LLM não devolve confiança por palavra. A porta de qualidade passa a ser
