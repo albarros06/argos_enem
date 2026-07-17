@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api";
 import { business } from "@/lib/config";
 import { storage } from "@/lib/storage";
 import { logger } from "@/lib/logger";
+import { scheduleBackgroundTask } from "@/lib/background";
 import {
   consumeCredit,
   getBalance,
@@ -143,30 +144,65 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
   return { submissionId: id, uploadUrl };
 }
 
-// Cliente sinaliza que o upload terminou → roda OCR inline (R6).
-// Falha de extração NÃO consome crédito (FR-007) e apaga a imagem (FR-027a).
+// Cliente sinaliza que o upload terminou → reivindica o estado transcribing e
+// dispara o OCR em segundo plano. A transcrição (sobretudo por LLM) leva segundos;
+// rodá-la inline no request estourava o timeout da função. O cliente acompanha a
+// submissão por polling até awaiting_review (ou failed).
 export async function markUploaded(userId: string, submissionId: string) {
   const submission = await ownedSubmission(userId, submissionId);
-  if (submission.status === "awaiting_review") {
-    return submission; // chamada repetida — idempotente
+  // Idempotente: chamadas repetidas não reprocessam nem reagendam.
+  if (submission.status === "transcribing" || submission.status === "awaiting_review") {
+    return submission;
   }
-  assertTransition(submission.status, "awaiting_review");
+  assertTransition(submission.status, "transcribing");
   if (!submission.imageKey) {
     throw new ApiError("INVALID_STATE", 409, "Imagem não disponível para extração.");
+  }
+
+  // Reivindica a transição (à prova de /uploaded concorrentes) antes de agendar;
+  // só quem efetivamente reivindicou dispara o OCR.
+  const claimed = await prisma.submission.updateMany({
+    where: { id: submission.id, status: "pending" },
+    data: { status: "transcribing" },
+  });
+  if (claimed.count === 0) {
+    return prisma.submission.findUniqueOrThrow({ where: { id: submission.id } });
+  }
+
+  startTranscription(submission.id);
+  return prisma.submission.findUniqueOrThrow({ where: { id: submission.id } });
+}
+
+// Dispara o OCR fora do request (after() em produção; ver scheduleBackgroundTask).
+export function startTranscription(submissionId: string): void {
+  scheduleBackgroundTask("transcription", () => transcribeSubmission(submissionId));
+}
+
+// OCR em segundo plano: extrai o texto e move para awaiting_review, ou marca failed.
+// Falha NÃO consome crédito (FR-007), apaga a imagem (FR-027a) e libera a vaga no
+// tema da semana. Reentrante: só age sobre uma submissão ainda em transcribing.
+export async function transcribeSubmission(submissionId: string): Promise<void> {
+  const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
+  if (!submission || submission.status !== "transcribing" || !submission.imageKey) {
+    logger.warn("transcription_skipped_invalid_state", {
+      submissionId,
+      status: submission?.status,
+    });
+    return;
   }
 
   const outcome = await extractFromStorage(submission.imageKey);
   if (!outcome.ok) {
     await deleteImage(submission.imageKey);
-    // Falha de extração não consome crédito; libera a vaga no tema da semana.
     await deleteEntry(submission.id);
-    return prisma.submission.update({
+    await prisma.submission.update({
       where: { id: submission.id },
       data: { status: "failed", failureReason: outcome.reason, imageKey: null },
     });
+    return;
   }
 
-  return prisma.submission.update({
+  await prisma.submission.update({
     where: { id: submission.id },
     data: {
       status: "awaiting_review",

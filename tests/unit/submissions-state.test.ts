@@ -4,9 +4,12 @@ import { ApiError } from "@/lib/api";
 import { assertTransition, canTransition } from "@/modules/submissions/stateMachine";
 
 const allowed: [SubmissionStatus, SubmissionStatus][] = [
-  ["pending", "awaiting_review"],
+  ["pending", "transcribing"],
   ["pending", "failed"],
   ["pending", "expired"],
+  ["transcribing", "awaiting_review"],
+  ["transcribing", "failed"],
+  ["transcribing", "expired"],
   ["awaiting_review", "grading"],
   ["awaiting_review", "expired"],
   ["grading", "completed"],
@@ -15,6 +18,7 @@ const allowed: [SubmissionStatus, SubmissionStatus][] = [
 
 const statuses: SubmissionStatus[] = [
   "pending",
+  "transcribing",
   "awaiting_review",
   "grading",
   "completed",

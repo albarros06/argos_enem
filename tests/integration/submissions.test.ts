@@ -55,12 +55,26 @@ async function startSubmission(): Promise<string> {
   return submissionId;
 }
 
+// markUploaded agenda o OCR em segundo plano e retorna em transcribing; espera a
+// transcrição (fake, in-process) concluir e devolve o estado terminal.
 async function uploadAndExtract(submissionId: string) {
-  const response = await uploadedRoute(
+  await uploadedRoute(
     jsonRequest(`/api/submissions/${submissionId}/uploaded`, "POST"),
     routeContext({ id: submissionId }),
   );
-  return response.json();
+  return vi.waitFor(
+    async () => {
+      const view = await (
+        await getRoute(
+          jsonRequest(`/api/submissions/${submissionId}`, "GET"),
+          routeContext({ id: submissionId }),
+        )
+      ).json();
+      expect(["awaiting_review", "failed", "expired"]).toContain(view.status);
+      return { status: view.status, failureReason: view.failureReason };
+    },
+    { timeout: 5000, interval: 50 },
+  );
 }
 
 async function startPdfSubmission(sha: string): Promise<string> {
@@ -343,6 +357,46 @@ describe("submission lifecycle", () => {
     const { items, total } = await response.json();
     expect(total).toBe(0);
     expect(items).toHaveLength(0);
+  });
+});
+
+describe("async transcription", () => {
+  beforeEach(resetDb);
+
+  it("markUploaded returns transcribing immediately, then finishes OCR in the background", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    const submissionId = await startSubmission();
+
+    // A resposta do /uploaded é imediata: o OCR ainda não rodou (roda fora do request).
+    const kickoff = await uploadedRoute(
+      jsonRequest(`/api/submissions/${submissionId}/uploaded`, "POST"),
+      routeContext({ id: submissionId }),
+    );
+    expect((await kickoff.json()).status).toBe("transcribing");
+
+    // A tarefa em segundo plano conclui e move para awaiting_review com a transcrição.
+    await waitForStatus(submissionId, "awaiting_review");
+    const transcription = await prisma.transcription.findUnique({ where: { submissionId } });
+    expect(transcription?.rawText).toBe(FAKE_ESSAY_TEXT);
+  });
+
+  it("a failed background OCR marks the submission failed without consuming a credit", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    enqueueFakeTranscriptionResult(new Error("vision fora do ar"));
+    const submissionId = await startSubmission();
+
+    await uploadedRoute(
+      jsonRequest(`/api/submissions/${submissionId}/uploaded`, "POST"),
+      routeContext({ id: submissionId }),
+    );
+    await waitForStatus(submissionId, "failed");
+
+    const submission = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
+    expect(submission.failureReason).toBe("extraction_failed");
+    expect(submission.imageKey).toBeNull();
+    expect((await getBalance(user.id)).freeRemaining).toBe(3);
   });
 });
 

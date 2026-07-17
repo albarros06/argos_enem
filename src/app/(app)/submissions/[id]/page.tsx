@@ -113,15 +113,19 @@ export default function SubmissionDetailPage({ params }: { params: Promise<{ id:
     );
   }
 
-  if (submission.status === "pending" || submission.status === "grading") {
+  if (
+    submission.status === "pending" ||
+    submission.status === "transcribing" ||
+    submission.status === "grading"
+  ) {
     return (
       <>
         <h1>{submission.themeText}</h1>
         <div className="card">
           <p>
-            {submission.status === "pending"
-              ? "Processando a sua redação..."
-              : "Sua redação está sendo corrigida — isso leva de 1 a 3 minutos."}
+            {submission.status === "grading"
+              ? "Sua redação está sendo corrigida — isso leva de 1 a 3 minutos."
+              : "Lendo o texto da sua redação..."}
           </p>
           <p className="muted">Esta página atualiza automaticamente.</p>
         </div>
