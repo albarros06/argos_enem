@@ -38,7 +38,7 @@ test("register → verify → upload → review → confirm → evaluation", asy
 
   // Upload da foto com tema livre
   await page.goto("/submissions/new");
-  await page.getByLabel(/Foto da redação/).setInputFiles({
+  await page.getByLabel(/Redação \(foto/).setInputFiles({
     name: "redacao.png",
     mimeType: "image/png",
     buffer: PNG_1X1,

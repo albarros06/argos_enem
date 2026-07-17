@@ -66,7 +66,7 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
 
   async function abandon() {
     if (
-      !window.confirm("Descartar esta redação? A foto será apagada e nenhum crédito será usado.")
+      !window.confirm("Descartar esta redação? O arquivo será apagado e nenhum crédito será usado.")
     ) {
       return;
     }
@@ -91,12 +91,12 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
     <>
       <h1>Revisar transcrição</h1>
       <p className="muted">
-        Confira o texto extraído da sua foto e corrija apenas os erros de leitura — não reescreva a
-        redação.
+        Confira o texto extraído da sua redação e corrija apenas os erros de leitura — não reescreva
+        a redação.
       </p>
       {confidence !== null && confidence < 0.8 && (
         <div className="banner">
-          A leitura da foto teve confiança moderada ({Math.round(confidence * 100)}%). Revise o
+          A leitura teve confiança moderada ({Math.round(confidence * 100)}%). Revise o
           texto com atenção antes de confirmar.
         </div>
       )}
@@ -140,7 +140,7 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
         </button>
       </p>
       <p className="muted">
-        Ao confirmar, a foto original é apagada e a correção começa — leva de 1 a 3 minutos.
+        Ao confirmar, o arquivo original é apagado e a correção começa — leva de 1 a 3 minutos.
       </p>
     </>
   );

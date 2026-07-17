@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { storage, fakeStorageHas } from "@/lib/storage";
 import { getBalance } from "@/modules/credits";
-import { enqueueFakeTranscriptionResult, FAKE_ESSAY_TEXT } from "@/modules/transcription";
+import {
+  enqueueFakeTranscriptionResult,
+  enqueueFakePdfResult,
+  FAKE_ESSAY_TEXT,
+} from "@/modules/transcription";
 import { defaultFakeEvaluation, enqueueFakeGradingResult } from "@/modules/grading";
 import { actAs, createUser, jsonRequest, resetDb, routeContext } from "../helpers";
 
@@ -57,6 +61,24 @@ async function uploadAndExtract(submissionId: string) {
     routeContext({ id: submissionId }),
   );
   return response.json();
+}
+
+async function startPdfSubmission(sha: string): Promise<string> {
+  const response = await createRoute(
+    jsonRequest(
+      "/api/submissions",
+      "POST",
+      createBody({ contentType: "application/pdf", imageSha256: sha }),
+    ),
+    routeContext({}),
+  );
+  expect(response.status).toBe(201);
+  const { submissionId, uploadUrl } = await response.json();
+
+  const imageKey = decodeURIComponent(new URL(uploadUrl).pathname.replace("/api/fake-upload/", ""));
+  expect(imageKey).toMatch(/\.pdf$/);
+  await storage().putObject(imageKey, Buffer.from("pdf-fake"), "application/pdf");
+  return submissionId;
 }
 
 async function waitForStatus(submissionId: string, expected: string) {
@@ -321,5 +343,103 @@ describe("submission lifecycle", () => {
     const { items, total } = await response.json();
     expect(total).toBe(0);
     expect(items).toHaveLength(0);
+  });
+});
+
+describe("PDF submission", () => {
+  beforeEach(resetDb);
+
+  it("accepts application/pdf and stores a .pdf object key (US1, FR-001)", async () => {
+    const user = await createUser();
+    actAs(user.id);
+
+    const response = await createRoute(
+      jsonRequest(
+        "/api/submissions",
+        "POST",
+        createBody({ contentType: "application/pdf", imageSha256: "c".repeat(64) }),
+      ),
+      routeContext({}),
+    );
+    expect(response.status).toBe(201);
+    const { uploadUrl } = await response.json();
+    const key = decodeURIComponent(new URL(uploadUrl).pathname.replace("/api/fake-upload/", ""));
+    expect(key).toMatch(/\.pdf$/);
+  });
+
+  it("single-page PDF extracts text and reaches awaiting_review (US1)", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    enqueueFakePdfResult({ text: FAKE_ESSAY_TEXT, meanConfidence: 0.9, totalPages: 1 });
+
+    const submissionId = await startPdfSubmission("c".repeat(64));
+    const uploaded = await uploadAndExtract(submissionId);
+
+    expect(uploaded.status).toBe("awaiting_review");
+    const transcription = await prisma.transcription.findUnique({ where: { submissionId } });
+    expect(transcription?.rawText).toBe(FAKE_ESSAY_TEXT);
+  });
+
+  it("multi-page PDF fails as multi_page_pdf, deletes the file, consumes no credit (US2, FR-011)", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    enqueueFakePdfResult({ text: FAKE_ESSAY_TEXT, meanConfidence: 0.9, totalPages: 2 });
+
+    const submissionId = await startPdfSubmission("d".repeat(64));
+    const { imageKey } = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
+    const uploaded = await uploadAndExtract(submissionId);
+
+    expect(uploaded.status).toBe("failed");
+    expect(uploaded.failureReason).toBe("multi_page_pdf");
+    // Crédito só é consumido na confirmação, que uma submissão failed nunca alcança (FR-007).
+    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    const submission = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
+    expect(submission.imageKey).toBeNull();
+    expect(fakeStorageHas(imageKey!)).toBe(false);
+  });
+
+  it("unreadable PDF fails as extraction_failed without consuming a credit (US2)", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    enqueueFakePdfResult(new Error("pdf ilegível ou protegido"));
+
+    const submissionId = await startPdfSubmission("e".repeat(64));
+    const uploaded = await uploadAndExtract(submissionId);
+
+    expect(uploaded.status).toBe("failed");
+    expect(uploaded.failureReason).toBe("extraction_failed");
+    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+  });
+
+  it("rejects an oversized PDF and flags a duplicate PDF (US3, FR-004/FR-005)", async () => {
+    const user = await createUser();
+    actAs(user.id);
+
+    const oversized = await createRoute(
+      jsonRequest(
+        "/api/submissions",
+        "POST",
+        createBody({
+          contentType: "application/pdf",
+          imageSha256: "f".repeat(64),
+          sizeBytes: 20 * 1024 * 1024,
+        }),
+      ),
+      routeContext({}),
+    );
+    expect(oversized.status).toBe(400);
+    expect((await oversized.json()).error.code).toBe("VALIDATION_ERROR");
+
+    await startPdfSubmission("1".repeat(64));
+    const duplicate = await createRoute(
+      jsonRequest(
+        "/api/submissions",
+        "POST",
+        createBody({ contentType: "application/pdf", imageSha256: "1".repeat(64) }),
+      ),
+      routeContext({}),
+    );
+    expect(duplicate.status).toBe(409);
+    expect((await duplicate.json()).error.code).toBe("DUPLICATE_IMAGE");
   });
 });

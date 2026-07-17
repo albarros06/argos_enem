@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { listSubmissions } from "@/modules/submissions";
 
 const STATUS_LABELS: Record<string, { label: string; badge: string }> = {
-  pending: { label: "Processando foto", badge: "" },
+  pending: { label: "Processando redação", badge: "" },
   awaiting_review: { label: "Aguardando sua revisão", badge: "warning" },
   grading: { label: "Em correção", badge: "" },
   completed: { label: "Corrigida", badge: "success" },

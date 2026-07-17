@@ -66,6 +66,7 @@ enum SubmissionStatus {
 enum FailureReason {
   extraction_failed
   insufficient_text
+  multi_page_pdf
   grading_failed
 }
 

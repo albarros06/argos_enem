@@ -36,9 +36,11 @@ const COMPETENCY_LABELS: Record<number, string> = {
 
 const FAILURE_MESSAGES: Record<string, string> = {
   extraction_failed:
-    "Não conseguimos ler o texto da foto. Tire uma nova foto com boa iluminação, papel plano e a folha inteira no enquadramento — nenhum crédito foi usado.",
+    "Não conseguimos ler o texto do arquivo. Envie uma foto nítida (boa iluminação, papel plano, folha inteira) ou um PDF legível de uma página — nenhum crédito foi usado.",
   insufficient_text:
-    "O texto identificado é curto demais para correção (mínimo de 7 linhas). Envie uma nova foto da redação completa — nenhum crédito foi usado.",
+    "O texto identificado é curto demais para correção (mínimo de 7 linhas). Envie novamente a redação completa, como foto ou PDF — nenhum crédito foi usado.",
+  multi_page_pdf:
+    "O PDF enviado tem mais de uma página. Envie um arquivo com apenas a página da redação — nenhum crédito foi usado.",
   grading_failed:
     "Houve uma falha na correção e seu crédito foi devolvido automaticamente. Envie a redação novamente.",
 };
@@ -118,7 +120,7 @@ export default function SubmissionDetailPage({ params }: { params: Promise<{ id:
         <div className="card">
           <p>
             {submission.status === "pending"
-              ? "Processando a foto da sua redação..."
+              ? "Processando a sua redação..."
               : "Sua redação está sendo corrigida — isso leva de 1 a 3 minutos."}
           </p>
           <p className="muted">Esta página atualiza automaticamente.</p>
@@ -137,7 +139,7 @@ export default function SubmissionDetailPage({ params }: { params: Promise<{ id:
         </p>
         <p>
           <Link className="button" href="/submissions/new">
-            Enviar nova foto
+            Enviar nova redação
           </Link>
         </p>
       </>

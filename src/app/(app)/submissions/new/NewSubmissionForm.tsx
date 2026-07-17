@@ -15,7 +15,7 @@ interface Props {
   weeklyTheme?: { id: string; title: string } | null;
 }
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 async function sha256Hex(file: File): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
@@ -40,15 +40,15 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
     setDuplicateWarning(false);
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      setError("Escolha a foto da redação.");
+      setError("Escolha a foto ou o PDF da redação.");
       return;
     }
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError("Formato não suportado. Envie uma foto JPEG ou PNG.");
+      setError("Formato não suportado. Envie uma foto JPEG, PNG ou um arquivo PDF.");
       return;
     }
     if (file.size > maxUploadBytes) {
-      setError(`A imagem excede o limite de ${limitMb} MB.`);
+      setError(`O arquivo excede o limite de ${limitMb} MB.`);
       return;
     }
     const selectedTheme = themes.find((theme) => theme.id === themeId);
@@ -97,7 +97,7 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
         body: file,
       });
       if (!uploadResponse.ok) {
-        throw new Error("Falha ao enviar a imagem. Tente novamente.");
+        throw new Error("Falha ao enviar o arquivo. Tente novamente.");
       }
 
       setPhase("extracting");
@@ -106,7 +106,7 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
       });
       if (!uploadedResponse.ok) {
         const body = await uploadedResponse.json().catch(() => null);
-        throw new Error(body?.error?.message ?? "Falha ao processar a imagem.");
+        throw new Error(body?.error?.message ?? "Falha ao processar o arquivo.");
       }
       const { status } = await uploadedResponse.json();
       if (status === "awaiting_review") {
@@ -127,8 +127,14 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
         void submit(false);
       }}
     >
-      <label htmlFor="photo">Foto da redação (JPEG ou PNG, até {limitMb} MB)</label>
-      <input id="photo" ref={fileRef} type="file" accept="image/jpeg,image/png" required />
+      <label htmlFor="photo">Redação (foto JPEG/PNG ou PDF, até {limitMb} MB)</label>
+      <input
+        id="photo"
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,application/pdf"
+        required
+      />
 
       {weeklyTheme ? (
         <div className="banner">
@@ -167,7 +173,7 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
 
       {duplicateWarning && (
         <div className="banner">
-          <p>Esta foto parece já ter sido enviada. Quer enviar mesmo assim?</p>
+          <p>Este arquivo parece já ter sido enviado. Quer enviar mesmo assim?</p>
           <button type="button" onClick={() => void submit(true)}>
             Enviar mesmo assim
           </button>{" "}
@@ -182,8 +188,8 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
           {phase === "idle"
             ? "Enviar redação"
             : phase === "uploading"
-              ? "Enviando foto..."
-              : "Lendo o texto da foto..."}
+              ? "Enviando arquivo..."
+              : "Lendo o texto da redação..."}
         </button>
       </p>
       <p className="muted">Após o envio, você revisa o texto extraído antes de usar 1 crédito.</p>
