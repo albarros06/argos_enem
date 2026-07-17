@@ -2,7 +2,7 @@ import { business } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { storage } from "@/lib/storage";
 import { countEssayLines } from "@/lib/text";
-import { transcriptionProvider } from "./provider";
+import { imageTranscriptionProvider, pdfTranscriptionProvider } from "./provider";
 
 export { enqueueFakeTranscriptionResult, enqueueFakePdfResult, FAKE_ESSAY_TEXT } from "./provider";
 
@@ -11,9 +11,9 @@ export type ExtractionOutcome =
   | { ok: false; reason: "extraction_failed" | "insufficient_text" | "multi_page_pdf" };
 
 // Extrai o texto do arquivo no storage e aplica os limiares de qualidade (FR-006/FR-007).
-// PDF e foto passam pela mesma porta de qualidade; o PDF é roteado pelo sufixo da chave
-// (.pdf) para o OCR de arquivo, que também informa o total de páginas (FR-011/FR-013).
-// Falha NÃO consome crédito — o chamador apenas marca a submissão como failed.
+// Roteia pelo sufixo da chave: .pdf -> Vision (batchAnnotateFiles, com totalPages para a
+// rejeição de multipágina, FR-011); imagem -> provider de imagem selecionado por config
+// (Gemini/LLM ou Vision). Falha NÃO consome crédito — o chamador marca a submissão failed.
 export async function extractFromStorage(imageKey: string): Promise<ExtractionOutcome> {
   const isPdf = imageKey.toLowerCase().endsWith(".pdf");
   let text: string;
@@ -22,7 +22,7 @@ export async function extractFromStorage(imageKey: string): Promise<ExtractionOu
     const file = await storage().getObject(imageKey);
     if (isPdf) {
       const result = await logger.vendorCall("google-vision", "batchAnnotateFiles", () =>
-        transcriptionProvider().extractPdf(file),
+        pdfTranscriptionProvider().extractPdf(file),
       );
       // Redação do ENEM é uma única página: mais de uma página é rejeitada (FR-011).
       if (result.totalPages > 1) {
@@ -31,8 +31,9 @@ export async function extractFromStorage(imageKey: string): Promise<ExtractionOu
       text = result.text;
       meanConfidence = result.meanConfidence;
     } else {
-      const result = await logger.vendorCall("google-vision", "documentTextDetection", () =>
-        transcriptionProvider().extract(file),
+      const mimeType = imageKey.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+      const result = await logger.vendorCall("image-ocr", "transcribe", () =>
+        imageTranscriptionProvider().extract(file, mimeType),
       );
       text = result.text;
       meanConfidence = result.meanConfidence;

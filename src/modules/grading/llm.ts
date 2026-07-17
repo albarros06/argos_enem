@@ -1,10 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { GoogleGenAI } from "@google/genai";
 import { business, env, fakeVendorsEnabled } from "@/lib/config";
 import { logger } from "@/lib/logger";
+import { vertexClient } from "@/lib/vertex";
 import { buildGradingUserMessage, RUBRIC_SYSTEM_PROMPT } from "./rubric";
 import { llmEvaluationSchema, type LlmEvaluation } from "./schema";
+
+// Re-exportado para compatibilidade: a resolução de credencial Vertex mora em
+// @/lib/vertex (compartilhada entre grading e OCR via Gemini).
+export { resolveVertexClientConfig, type VertexClientConfig } from "@/lib/vertex";
 
 export interface GradingInput {
   theme: string;
@@ -22,7 +26,7 @@ class AnthropicGradingProvider implements GradingProvider {
     const response = await logger.vendorCall("anthropic", "grade_essay", () =>
       this.client.messages.parse({
         model: business.gradingModelId,
-        max_tokens: 8192,
+        max_tokens: business.gradingMaxOutputTokens,
         system: [
           {
             type: "text",
@@ -93,55 +97,10 @@ const GEMINI_EVALUATION_SCHEMA = {
   propertyOrdering: ["zeroReason", "competencies", "generalFeedback", "annotations"],
 };
 
-export interface VertexClientConfig {
-  vertexai: true;
-  project: string;
-  location: string;
-  googleAuthOptions: { credentials: Record<string, unknown> };
-}
-
-// Deriva a configuração do cliente Vertex AI a partir do ambiente. Falha com
-// mensagem acionável quando falta credencial, o JSON é inválido, ou não há
-// projeto (nem GOOGLE_CLOUD_PROJECT nem project_id na credencial) — FR-008.
-// O projeto vem de GOOGLE_CLOUD_PROJECT ou, na ausência, do project_id da
-// própria credencial de serviço (a mesma usada no OCR).
-export function resolveVertexClientConfig(
-  credentialsJson: string,
-  projectOverride: string,
-  location: string,
-): VertexClientConfig {
-  if (!credentialsJson) {
-    throw new Error(
-      "GOOGLE_APPLICATION_CREDENTIALS_JSON ausente: necessário para autenticar o grading no Vertex AI.",
-    );
-  }
-  let credentials: Record<string, unknown>;
-  try {
-    credentials = JSON.parse(credentialsJson);
-  } catch {
-    throw new Error("GOOGLE_APPLICATION_CREDENTIALS_JSON inválido: não é um JSON válido.");
-  }
-  const credentialProject =
-    typeof credentials.project_id === "string" ? credentials.project_id : "";
-  const project = projectOverride || credentialProject;
-  if (!project) {
-    throw new Error(
-      "Projeto do Vertex AI indeterminado: defina GOOGLE_CLOUD_PROJECT ou inclua project_id na credencial de serviço.",
-    );
-  }
-  return { vertexai: true, project, location, googleAuthOptions: { credentials } };
-}
-
 class GeminiGradingProvider implements GradingProvider {
   private location = env().GOOGLE_CLOUD_LOCATION;
   // Vertex AI com a service account já usada no OCR — sem chave de API própria.
-  private client = new GoogleGenAI(
-    resolveVertexClientConfig(
-      env().GOOGLE_APPLICATION_CREDENTIALS_JSON,
-      env().GOOGLE_CLOUD_PROJECT,
-      this.location,
-    ),
-  );
+  private client = vertexClient();
 
   async grade(input: GradingInput): Promise<LlmEvaluation> {
     const response = await logger.vendorCall("gemini", "grade_essay", () =>
@@ -156,7 +115,7 @@ class GeminiGradingProvider implements GradingProvider {
             responseMimeType: "application/json",
             responseJsonSchema: GEMINI_EVALUATION_SCHEMA,
             temperature: 0, // correção reprodutível
-            maxOutputTokens: 8192,
+            maxOutputTokens: business.gradingMaxOutputTokens,
           },
         })
         .catch((error: unknown) => {
