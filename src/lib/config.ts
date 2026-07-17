@@ -38,7 +38,15 @@ export const business = {
   gracePeriodDays: intFromEnv("GRACE_PERIOD_DAYS", 7),
   abandonedSweepHours: intFromEnv("ABANDONED_SWEEP_HOURS", 24),
   // Provider é selecionado pelo prefixo do id (gemini-* -> Gemini, claude-* -> Anthropic).
-  gradingModelId: process.env.GRADING_MODEL_ID ?? "gemini-2.5-pro",
+  gradingModelId: process.env.GRADING_MODEL_ID ?? "gemini-3.1-pro-preview",
+  // OCR de imagens: gemini-* usa transcrição por LLM (ignora linhas/numeração do
+  // papel); qualquer outro valor (ex.: "google-vision") mantém o Vision. PDFs
+  // continuam sempre no Vision (batchAnnotateFiles) por causa da contagem de páginas.
+  imageOcrModelId: process.env.IMAGE_OCR_MODEL_ID ?? "gemini-3-flash-preview",
+  imageOcrMaxOutputTokens: intFromEnv("IMAGE_OCR_MAX_OUTPUT_TOKENS", 4096),
+  // Teto de saída do grading. Modelos com "thinking" (Gemini 3) consomem parte do
+  // orçamento pensando; suba este valor se vir respostas vazias/truncadas.
+  gradingMaxOutputTokens: intFromEnv("GRADING_MAX_OUTPUT_TOKENS", 8192),
   allowedUploadTypes: ["image/jpeg", "image/png", "application/pdf"],
   verificationTokenTtlHours: 24,
   resetTokenTtlHours: 2,

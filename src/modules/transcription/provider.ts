@@ -1,5 +1,6 @@
 import { ImageAnnotatorClient, protos } from "@google-cloud/vision";
-import { env, fakeVendorsEnabled } from "@/lib/config";
+import { business, env, fakeVendorsEnabled } from "@/lib/config";
+import { vertexClient } from "@/lib/vertex";
 
 type FullTextAnnotation = protos.google.cloud.vision.v1.ITextAnnotation;
 
@@ -14,10 +15,28 @@ export interface PdfTranscriptionResult extends TranscriptionResult {
   totalPages: number;
 }
 
-export interface TranscriptionProvider {
-  extract(image: Buffer): Promise<TranscriptionResult>;
+// OCR de imagens: Vision (pixel) ou Gemini (LLM). A transcrição por LLM entende
+// o que ignorar — linhas impressas e numeração da margem — o que o OCR pixel a
+// pixel não consegue.
+export interface ImageTranscriptionProvider {
+  extract(image: Buffer, mimeType: string): Promise<TranscriptionResult>;
+}
+
+// PDF sempre no Vision: batchAnnotateFiles reporta totalPages, base da rejeição
+// de PDF com mais de uma página (FR-011).
+export interface PdfTranscriptionProvider {
   extractPdf(pdf: Buffer): Promise<PdfTranscriptionResult>;
 }
+
+// Prompt de transcrição verbatim. A fidelidade é crítica: a Competência 1 avalia
+// ortografia/gramática, então o modelo NÃO pode corrigir os erros do aluno.
+const TRANSCRIPTION_PROMPT = `Transcreva EXATAMENTE o texto manuscrito desta redação, linha por linha.
+Regras obrigatórias:
+1. Ignore completamente as linhas impressas do papel e a numeração das linhas na margem — elas não fazem parte da redação.
+2. NÃO corrija ortografia, gramática, acentuação nem pontuação. Transcreva os erros do aluno exatamente como aparecem — eles são avaliados.
+3. Preserve as quebras de linha do texto escrito.
+4. Não adicione títulos, comentários ou explicações. Devolva apenas o texto transcrito.
+5. Se a imagem não contiver texto manuscrito legível, devolva uma string vazia.`;
 
 // Média das confianças por palavra de uma fullTextAnnotation do Vision. Mesmo
 // cálculo para foto e PDF — uma única porta de qualidade (FR-013).
@@ -39,11 +58,12 @@ function meanWordConfidence(annotation: FullTextAnnotation): number {
     : 0;
 }
 
-class VisionTranscriptionProvider implements TranscriptionProvider {
+class VisionTranscriptionProvider implements ImageTranscriptionProvider, PdfTranscriptionProvider {
   private client = new ImageAnnotatorClient({
     credentials: JSON.parse(env().GOOGLE_APPLICATION_CREDENTIALS_JSON),
   });
 
+  // mimeType não é usado: documentTextDetection recebe os bytes diretamente.
   async extract(image: Buffer): Promise<TranscriptionResult> {
     const [result] = await this.client.documentTextDetection({
       image: { content: image },
@@ -80,6 +100,37 @@ class VisionTranscriptionProvider implements TranscriptionProvider {
   }
 }
 
+// Transcrição por LLM (Vertex AI). Enviamos a imagem + o prompt verbatim; o
+// modelo ignora as linhas/numeração impressas e não corrige os erros do aluno.
+class GeminiImageTranscriptionProvider implements ImageTranscriptionProvider {
+  private client = vertexClient();
+
+  async extract(image: Buffer, mimeType: string): Promise<TranscriptionResult> {
+    const response = await this.client.models.generateContent({
+      model: business.imageOcrModelId,
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inlineData: { mimeType, data: image.toString("base64") } },
+            { text: TRANSCRIPTION_PROMPT },
+          ],
+        },
+      ],
+      config: {
+        temperature: 0, // transcrição reprodutível
+        responseMimeType: "text/plain",
+        maxOutputTokens: business.imageOcrMaxOutputTokens,
+      },
+    });
+    const text = response.text?.trim() ?? "";
+    // Um LLM não devolve confiança por palavra. A porta de qualidade passa a ser
+    // o mínimo de linhas + a revisão do aluno; sinalizamos 1 quando há texto e 0
+    // quando a imagem é ilegível (o modelo devolve vazio).
+    return { text, meanConfidence: text ? 1 : 0 };
+  }
+}
+
 export const FAKE_ESSAY_TEXT = `A persistência da desigualdade educacional no Brasil revela um desafio histórico ainda não superado.
 Embora a Constituição de 1988 garanta a educação como direito de todos, a realidade das escolas públicas evidencia um abismo entre a lei e a prática.
 Em primeiro lugar, a infraestrutura precária de muitas instituições compromete o aprendizado dos estudantes.
@@ -112,7 +163,7 @@ export function enqueueFakePdfResult(result: PdfTranscriptionResult | Error) {
   fakePdfQueue().push(result);
 }
 
-class FakeTranscriptionProvider implements TranscriptionProvider {
+class FakeTranscriptionProvider implements ImageTranscriptionProvider, PdfTranscriptionProvider {
   async extract(): Promise<TranscriptionResult> {
     const queued = fakeQueue().shift();
     if (queued instanceof Error) {
@@ -130,13 +181,53 @@ class FakeTranscriptionProvider implements TranscriptionProvider {
   }
 }
 
-let cached: TranscriptionProvider | null = null;
+export type ImageOcrKind = "fake" | "gemini" | "vision";
 
-export function transcriptionProvider(): TranscriptionProvider {
-  if (!cached) {
-    cached = fakeVendorsEnabled()
-      ? new FakeTranscriptionProvider()
-      : new VisionTranscriptionProvider();
+// Seleção do OCR de imagem: fake em testes/E2E; caso contrário o prefixo do
+// modelo decide (gemini-* -> transcrição por LLM, qualquer outro -> Vision).
+export function imageOcrKind(fake: boolean, modelId: string): ImageOcrKind {
+  if (fake) return "fake";
+  return modelId.startsWith("gemini") ? "gemini" : "vision";
+}
+
+let cachedFake: FakeTranscriptionProvider | null = null;
+let cachedImage: ImageTranscriptionProvider | null = null;
+let cachedPdf: PdfTranscriptionProvider | null = null;
+
+function fakeProvider(): FakeTranscriptionProvider {
+  if (!cachedFake) cachedFake = new FakeTranscriptionProvider();
+  return cachedFake;
+}
+
+export function imageTranscriptionProvider(): ImageTranscriptionProvider {
+  if (!cachedImage) {
+    switch (imageOcrKind(fakeVendorsEnabled(), business.imageOcrModelId)) {
+      case "fake":
+        cachedImage = fakeProvider();
+        break;
+      case "gemini":
+        cachedImage = new GeminiImageTranscriptionProvider();
+        break;
+      case "vision":
+        cachedImage = new VisionTranscriptionProvider();
+        break;
+    }
   }
-  return cached;
+  return cachedImage;
+}
+
+// PDF sempre no Vision (fora dos testes): precisamos de totalPages (FR-011).
+export function pdfTranscriptionProvider(): PdfTranscriptionProvider {
+  if (!cachedPdf) {
+    cachedPdf = fakeVendorsEnabled() ? fakeProvider() : new VisionTranscriptionProvider();
+  }
+  return cachedPdf;
+}
+
+// Para ferramentas de comparação (scripts/compare-ocr): instancia um motor de OCR
+// de imagem específico, sem cache e sem a seleção por config.
+export function imageProviderFor(kind: "gemini" | "vision"): ImageTranscriptionProvider {
+  return kind === "gemini"
+    ? new GeminiImageTranscriptionProvider()
+    : new VisionTranscriptionProvider();
 }
