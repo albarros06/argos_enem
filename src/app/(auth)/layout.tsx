@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import styles from "./auth.module.css";
 
@@ -9,7 +10,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className={styles.themeToggleWrapper}>
         <ThemeToggleClient />
       </div>
-      <main className={styles.container}>{children}</main>
+      <main className={styles.container}>
+        <div className={styles.glow} aria-hidden="true" />
+        <div className={styles.stack}>
+          <Link href="/" className={styles.brand}>
+            <span className={styles.brandMark} aria-hidden="true" />
+            Argos
+          </Link>
+          {children}
+        </div>
+      </main>
     </>
   );
 }

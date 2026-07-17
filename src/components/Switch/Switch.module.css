@@ -16,31 +16,37 @@
   cursor: pointer;
   user-select: none;
   font-family: var(--type-family-body);
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 0.95rem;
   color: var(--color-text-primary);
 }
 
 .toggle {
   display: inline-flex;
-  width: 44px;
-  height: 24px;
-  background-color: var(--color-border-default);
+  width: 48px;
+  height: 28px;
+  background-color: var(--color-surface-sunken);
   border-radius: var(--radius-pill);
   position: relative;
   transition: background-color 150ms ease;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .toggle::after {
   content: '';
   position: absolute;
-  width: 20px;
-  height: 20px;
-  background-color: white;
+  width: 22px;
+  height: 22px;
+  background-color: #ffffff;
   border-radius: 50%;
-  left: 2px;
+  left: 3px;
   transition: left 150ms ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 5px rgba(31, 42, 77, 0.25);
+}
+
+.input:focus-visible + .label .toggle {
+  box-shadow: var(--shadow-focus);
 }
 
 .input:checked + .label .toggle {
@@ -48,7 +54,7 @@
 }
 
 .input:checked + .label .toggle::after {
-  left: 22px;
+  left: 23px;
 }
 
 .input:disabled + .label {

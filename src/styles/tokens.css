@@ -1,58 +1,97 @@
 /**
  * Design System: CSS Custom Properties
- * Dark theme (default)
+ * Light theme (default) — friendly "Duolingo-like" look, blue-forward palette.
+ * Dark theme overrides live in theme.css ([data-theme="dark"]).
  */
 
-:root {
-  /* Colors */
-  --color-primary-brand: #2E5BFF;
-  --color-secondary-violet: #8A3FFE;
+:root,
+:root[data-theme="light"] {
+  /* ---- Brand blues (kept #2E5BFF, extended with new blue tones) ---- */
+  --color-primary-brand: #2e5bff; /* main action blue (kept) */
+  --color-primary-hover: #2450e6; /* hover state */
+  --color-primary-strong: #1b3fcc; /* darker blue — 3D button base / shadow */
+  --color-primary-soft: #e6edff; /* light blue tint (chips, hovers) */
+  --color-primary-softer: #f0f5ff; /* even lighter blue wash */
 
-  --color-surface-bg: #0E0E13;
-  --color-surface-fg: #1A1A23;
+  --color-sky: #1cb0f6; /* NEW bright sky blue accent */
+  --color-sky-strong: #1493d8; /* darker sky (shadow/hover) */
+  --color-sky-soft: #e3f5ff; /* sky tint */
 
-  --color-text-primary: #F5F5F5;
-  --color-text-secondary: #A0A0A0;
-  --color-text-tertiary: #606060;
+  --color-secondary-violet: #8a3ffe; /* kept, used very sparingly */
 
-  --color-border-default: rgba(255, 255, 255, 0.08);
+  /* ---- Surfaces ---- */
+  --color-surface-bg: #f3f7ff; /* page background (soft blue-white) */
+  --color-surface-fg: #ffffff; /* cards / inputs */
+  --color-surface-alt: #eaf1ff; /* soft blue section / hover fill */
+  --color-surface-sunken: #dfe8fb; /* pressed / track fill */
 
-  --color-error: #FF4C4C;
-  --color-warning: #FFB800;
-  --color-success: #4CAF50;
-  --color-info: #2E5BFF;
+  /* ---- Text (navy-leaning for a friendly, on-brand feel) ---- */
+  --color-text-primary: #1f2a4d; /* headings / primary */
+  --color-text-secondary: #5b6b8c; /* body muted */
+  --color-text-tertiary: #93a0b8; /* hints / disabled */
+  --color-text-on-brand: #ffffff; /* text on blue */
 
-  /* Spacing */
+  /* ---- Borders (Duolingo-style light, slightly thick visually) ---- */
+  --color-border-default: #e3e9f2;
+  --color-border-strong: #cdd8ea; /* card bottoms / secondary 3D base */
+
+  /* ---- Semantic (Duolingo palette; reinforces the playful vibe) ---- */
+  --color-error: #ff4b4b;
+  --color-error-strong: #e13b3b;
+  --color-error-soft: #ffe8e8;
+
+  --color-warning: #ffc800; /* gold */
+  --color-warning-strong: #e6a800;
+  --color-warning-soft: #fff5d6;
+
+  --color-success: #58cc02; /* feather green */
+  --color-success-strong: #46a302;
+  --color-success-soft: #e7f8d8;
+
+  --color-info: #1cb0f6;
+  --color-info-soft: #e3f5ff;
+
+  --color-gold: #ffc800; /* streaks / highlights */
+
+  /* ---- Spacing ---- */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
   --space-lg: 24px;
   --space-xl: 32px;
   --space-2xl: 48px;
+  --space-3xl: 64px;
 
-  /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  /* ---- Radii (chunkier / friendlier) ---- */
+  --radius-sm: 10px;
+  --radius-md: 14px;
   --radius-lg: 18px;
-  --radius-xl: 22px;
-  --radius-2xl: 26px;
+  --radius-xl: 24px;
+  --radius-2xl: 30px;
   --radius-pill: 999px;
-  --radius-button: 8px;
-  --radius-input: 8px;
-  --radius-card: 18px;
-  --radius-modal: 22px;
+  --radius-button: 16px;
+  --radius-input: 14px;
+  --radius-card: 20px;
+  --radius-modal: 24px;
 
-  /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.20);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
-  --shadow-glow: 0 0 24px rgba(142, 63, 254, 0.2);
+  /* ---- Shadows (soft, blue-tinted) ---- */
+  --shadow-sm: 0 2px 6px rgba(31, 42, 77, 0.06);
+  --shadow-md: 0 8px 20px rgba(31, 42, 77, 0.1);
+  --shadow-lg: 0 16px 40px rgba(31, 42, 77, 0.14);
+  --shadow-glow: 0 10px 30px rgba(46, 91, 255, 0.28);
+  --shadow-focus: 0 0 0 4px rgba(46, 91, 255, 0.22); /* focus ring */
 
-  /* Typography (fonts) */
-  --type-family-display: "Space Grotesk", sans-serif;
-  --type-family-body: "Space Grotesk", sans-serif;
-  --type-family-mono: "IBM Plex Mono", monospace;
+  /* ---- 3D "pressable" button (Duolingo signature) ---- */
+  --btn-drop: 4px; /* solid offset under buttons */
 
-  /* Gradients */
-  --gradient-brand: linear-gradient(90deg, #2E5BFF 0%, #8A3FFE 100%);
+  /* ---- Typography ---- */
+  --type-family-display: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --type-family-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --type-family-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  --tracking-label: 0.08em;
+
+  /* ---- Gradients (blue → sky; violet kept as an option) ---- */
+  --gradient-brand: linear-gradient(120deg, #2e5bff 0%, #1cb0f6 100%);
+  --gradient-brand-violet: linear-gradient(120deg, #2e5bff 0%, #8a3ffe 100%);
+  --gradient-sky: linear-gradient(180deg, #e3f5ff 0%, #f3f7ff 100%);
 }

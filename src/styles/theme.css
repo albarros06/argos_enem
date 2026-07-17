@@ -1,22 +1,66 @@
 /**
  * Design System: Theme Overrides
- * Light theme applied via [data-theme="light"]
+ * Dark theme applied via [data-theme="dark"].
+ * Light is the default (see tokens.css). Dark is a repolished, blue-navy variant.
  */
 
-:root[data-theme="light"] {
-  /* Colors */
-  --color-primary-brand: #0052CC;
-  --color-secondary-violet: #6B2FC3;
+:root[data-theme="dark"] {
+  /* ---- Brand blues (brighter for contrast on dark) ---- */
+  --color-primary-brand: #5b8cff;
+  --color-primary-hover: #6f9bff;
+  --color-primary-strong: #2e5bff;
+  --color-primary-soft: rgba(91, 140, 255, 0.16);
+  --color-primary-softer: rgba(91, 140, 255, 0.1);
 
-  --color-surface-bg: #FFFFFF;
-  --color-surface-fg: #F5F5F5;
+  --color-sky: #38bdf8;
+  --color-sky-strong: #1493d8;
+  --color-sky-soft: rgba(56, 189, 248, 0.16);
 
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #606060;
-  --color-text-tertiary: #A0A0A0;
+  --color-secondary-violet: #a879ff;
 
-  --color-border-default: rgba(0, 0, 0, 0.08);
+  /* ---- Surfaces (deep navy, not flat black) ---- */
+  --color-surface-bg: #0f1626;
+  --color-surface-fg: #172035;
+  --color-surface-alt: #1e2942;
+  --color-surface-sunken: #0b1120;
 
-  /* Semantic colors remain unchanged */
-  /* --color-error, --color-warning, --color-success, --color-info use dark values */
+  /* ---- Text ---- */
+  --color-text-primary: #eef3ff;
+  --color-text-secondary: #a9b6d4;
+  --color-text-tertiary: #6c7a9c;
+  --color-text-on-brand: #ffffff;
+
+  /* ---- Borders ---- */
+  --color-border-default: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+
+  /* ---- Semantic (brightened a touch for dark surfaces) ---- */
+  --color-error: #ff6b6b;
+  --color-error-strong: #e04a4a;
+  --color-error-soft: rgba(255, 107, 107, 0.14);
+
+  --color-warning: #ffd23f;
+  --color-warning-strong: #e6b62c;
+  --color-warning-soft: rgba(255, 210, 63, 0.14);
+
+  --color-success: #7dd934;
+  --color-success-strong: #58cc02;
+  --color-success-soft: rgba(125, 217, 52, 0.14);
+
+  --color-info: #38bdf8;
+  --color-info-soft: rgba(56, 189, 248, 0.14);
+
+  --color-gold: #ffd23f;
+
+  /* ---- Shadows (deeper on dark) ---- */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.38);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.46);
+  --shadow-glow: 0 12px 34px rgba(91, 140, 255, 0.4);
+  --shadow-focus: 0 0 0 4px rgba(91, 140, 255, 0.32);
+
+  /* ---- Gradients ---- */
+  --gradient-brand: linear-gradient(120deg, #5b8cff 0%, #38bdf8 100%);
+  --gradient-brand-violet: linear-gradient(120deg, #5b8cff 0%, #a879ff 100%);
+  --gradient-sky: linear-gradient(180deg, #172035 0%, #0f1626 100%);
 }

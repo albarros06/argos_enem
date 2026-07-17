@@ -18,7 +18,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // No servidor não existe localStorage nem matchMedia. Este valor é o que o HTML
 // enviado contém e o que a hidratação compara; a preferência real substitui-o no
 // primeiro render seguinte, sem divergência.
-const getServerTheme = (): Theme => 'dark';
+const getServerTheme = (): Theme => 'light';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // setTheme (lib/theme) grava no localStorage e dispara 'theme-change', que

@@ -9,26 +9,36 @@
 
 .label {
   font-family: var(--type-family-body);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--color-text-primary);
   display: block;
 }
 
 .input {
   font-family: var(--type-family-body);
+  font-weight: 600;
   background-color: var(--color-surface-fg);
   color: var(--color-text-primary);
-  border: 1px solid var(--color-border-default);
+  border: 2px solid var(--color-border-default);
   border-radius: var(--radius-input);
 
-  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
 }
 
 .input:focus {
   outline: none;
   border-color: var(--color-primary-brand);
-  box-shadow: 0 0 0 2px rgba(46, 91, 255, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 .input:disabled {
@@ -37,27 +47,32 @@
 }
 
 .size-sm {
-  padding: var(--space-xs) var(--space-sm);
-  font-size: 12px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.85rem;
 }
 
 .size-md {
-  padding: var(--space-sm) var(--space-md);
-  font-size: 14px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
 }
 
 .size-lg {
-  padding: var(--space-md) var(--space-lg);
-  font-size: 16px;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
 }
 
 .input.error {
   border-color: var(--color-error);
 }
 
+.input.error:focus {
+  box-shadow: 0 0 0 4px var(--color-error-soft);
+}
+
 .errorMessage {
   font-family: var(--type-family-body);
-  font-size: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--color-error);
   display: block;
 }
