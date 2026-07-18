@@ -155,6 +155,7 @@ enum CreditKind {
   consume
   refund
   quota_expiry
+  manual_grant
 }
 
 model CreditTransaction {
