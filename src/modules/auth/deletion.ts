@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { storage } from "@/lib/storage";
-import { cancel as cancelSubscription } from "@/modules/billing";
+import { terminateSubscription } from "@/modules/billing";
 
 // Exclusão de conta LGPD (FR-028). A rota marca deletedAt (revoga o acesso de
 // imediato — requireUser rejeita contas marcadas) e dispara o job assíncrono.
@@ -20,9 +20,9 @@ export async function requestAccountDeletion(userId: string): Promise<void> {
 // apagar o User.
 export async function runAccountDeletion(userId: string): Promise<void> {
   try {
-    await cancelSubscription(userId);
+    await terminateSubscription(userId);
   } catch (error) {
-    // Sem assinatura ativa ou falha no gateway — nada pode bloquear o direito
+    // Sem assinatura ou falha no gateway — nada pode bloquear o direito
     // de exclusão (LGPD).
     logger.warn("deletion_subscription_cancel_skipped", {
       userId,

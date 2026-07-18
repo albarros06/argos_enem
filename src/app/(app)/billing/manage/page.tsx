@@ -96,6 +96,20 @@ export default function ManageSubscriptionPage() {
     setWorking(false);
   }
 
+  async function reactivateSubscription() {
+    setWorking(true);
+    setError(null);
+    const response = await fetch("/api/billing/reactivate", { method: "POST" });
+    if (response.ok) {
+      setMessage("Assinatura reativada! Nada foi cobrado — sua cota e sua data de renovação seguem as mesmas.");
+      await load();
+    } else {
+      const body = await response.json().catch(() => null);
+      setError(body?.error?.message ?? "Não foi possível reativar.");
+    }
+    setWorking(false);
+  }
+
   if (subscription === undefined) {
     return <p className="muted">Carregando...</p>;
   }
@@ -182,12 +196,36 @@ export default function ManageSubscriptionPage() {
         </div>
       )}
 
+      {subscription.status === "canceled" &&
+        (new Date(subscription.currentPeriodEnd) > new Date() ? (
+          <div className="banner">
+            Renovação cancelada — seu acesso vai até{" "}
+            <strong>{new Date(subscription.currentPeriodEnd).toLocaleDateString("pt-BR")}</strong>.
+            Reative em um clique, sem nova cobrança: sua cota e sua data de renovação seguem as
+            mesmas. Depois de reativar você pode fazer upgrade para o Premium.
+          </div>
+        ) : (
+          <div className="banner">
+            Seu período de acesso terminou. Assine novamente para voltar a enviar redações.
+          </div>
+        ))}
+
       <p>
         {subscription.tier === "entry" && subscription.status === "active" && !upgradePix && (
           <button onClick={() => void upgradeToPremium()} disabled={working}>
             Fazer upgrade para o Premium
           </button>
         )}{" "}
+        {subscription.status === "canceled" &&
+          (new Date(subscription.currentPeriodEnd) > new Date() ? (
+            <button onClick={() => void reactivateSubscription()} disabled={working}>
+              Reativar assinatura
+            </button>
+          ) : (
+            <Link className="button" href="/billing">
+              Assinar novamente
+            </Link>
+          ))}{" "}
         {["active", "past_due"].includes(subscription.status) && (
           <button
             className="secondary"

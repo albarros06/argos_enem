@@ -45,7 +45,14 @@ export interface BillingProvider {
   createOneOffCharge(input: CreateChargeInput): Promise<{ id: string }>;
   updateSubscriptionValue(subscriptionId: string, valueCents: number): Promise<void>;
   cancelSubscription(subscriptionId: string): Promise<void>;
+  // Desativa/reativa sem apagar (soft-cancel reversível). Reativar exige a
+  // próxima data de cobrança (nextDueDate) — regra do Asaas.
+  deactivateSubscription(subscriptionId: string): Promise<void>;
+  reactivateSubscription(subscriptionId: string, nextDueDate: Date): Promise<void>;
   getPaymentPixQr(paymentId: string): Promise<PixQr | null>;
+  // Status real da cobrança no Asaas (PENDING, RECEIVED, CONFIRMED, OVERDUE,
+  // DELETED, ...). Retorna null quando a cobrança não pôde ser consultada.
+  getPaymentStatus(paymentId: string): Promise<string | null>;
 }
 
 function toReais(valueCents: number): number {
@@ -142,9 +149,29 @@ class AsaasProvider implements BillingProvider {
     await this.request("DELETE", `/subscriptions/${subscriptionId}`);
   }
 
+  async deactivateSubscription(subscriptionId: string) {
+    await this.request("PUT", `/subscriptions/${subscriptionId}`, { status: "INACTIVE" });
+  }
+
+  async reactivateSubscription(subscriptionId: string, nextDueDate: Date) {
+    await this.request("PUT", `/subscriptions/${subscriptionId}`, {
+      status: "ACTIVE",
+      nextDueDate: nextDueDate.toISOString().slice(0, 10),
+    });
+  }
+
   async getPaymentPixQr(paymentId: string) {
     try {
       return await this.request<PixQr>("GET", `/payments/${paymentId}/pixQrCode`);
+    } catch {
+      return null;
+    }
+  }
+
+  async getPaymentStatus(paymentId: string) {
+    try {
+      const payment = await this.request<{ status: string }>("GET", `/payments/${paymentId}`);
+      return payment.status ?? null;
     } catch {
       return null;
     }
@@ -172,8 +199,16 @@ class FakeBillingProvider implements BillingProvider {
 
   async cancelSubscription() {}
 
+  async deactivateSubscription() {}
+
+  async reactivateSubscription() {}
+
   async getPaymentPixQr(): Promise<PixQr> {
     return { encodedImage: "fake-qr-base64", payload: "fake-pix-copia-e-cola" };
+  }
+
+  async getPaymentStatus(): Promise<string> {
+    return "PENDING";
   }
 }
 

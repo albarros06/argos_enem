@@ -72,6 +72,9 @@ export async function subscribe(userId: string, input: z.infer<typeof subscribeS
 
   const existing = await prisma.subscription.findUnique({ where: { userId } });
   const now = new Date();
+  // Dentro do período pago (inclui a cancelada, que reativa em um clique) não
+  // se assina de novo — evita cobrança dupla e perda dos dias já pagos. Fora do
+  // período (expirada/vencida) o checkout inicia uma assinatura nova.
   if (
     existing &&
     ["active", "past_due", "canceled"].includes(existing.status) &&
@@ -125,6 +128,13 @@ export async function subscribe(userId: string, input: z.infer<typeof subscribeS
       currentPeriodEnd: now,
       cancelAtPeriodEnd: false,
     },
+  });
+
+  // Cobranças Pix anteriores em aberto ficam órfãs (o usuário gerou um novo QR
+  // sem pagar o antigo). Invalida-as para não sobrar banner "Pix pendente".
+  await prisma.paymentTransaction.updateMany({
+    where: { userId, status: "pending", method: "pix" },
+    data: { status: "failed" },
   });
 
   let pixQrCode: string | null = null;
@@ -247,16 +257,54 @@ export async function upgrade(userId: string, input: z.infer<typeof upgradeSchem
 }
 
 // Cancela a renovação mantendo acesso até o fim do período pago (FR-025).
+// Soft-cancel: desativa no Asaas (para de gerar cobranças) sem apagar, para
+// permitir reativação em um clique enquanto o período pago não termina.
 export async function cancel(userId: string) {
   const subscription = await prisma.subscription.findUnique({ where: { userId } });
   if (!subscription || !["active", "past_due"].includes(subscription.status)) {
     throw new ApiError("INVALID_STATE", 409, "Não há assinatura ativa para cancelar.");
   }
-  await billingProvider().cancelSubscription(subscription.asaasSubscriptionId);
+  await billingProvider().deactivateSubscription(subscription.asaasSubscriptionId);
   return prisma.subscription.update({
     where: { id: subscription.id },
     data: { status: "canceled", cancelAtPeriodEnd: true },
   });
+}
+
+// Reativa uma assinatura cancelada ainda dentro do período pago: um clique, sem
+// cobrança, preservando cota e data de renovação. Religa a assinatura no Asaas
+// com a próxima cobrança agendada para o fim do período atual. Se o período já
+// terminou, o usuário assina de novo pelo checkout (nova cobrança).
+export async function reactivate(userId: string) {
+  const subscription = await prisma.subscription.findUnique({ where: { userId } });
+  if (!subscription || subscription.status !== "canceled") {
+    throw new ApiError("INVALID_STATE", 409, "Não há assinatura cancelada para reativar.");
+  }
+  if (subscription.currentPeriodEnd <= new Date()) {
+    throw new ApiError(
+      "INVALID_STATE",
+      409,
+      "Seu período de acesso terminou. Assine novamente para voltar.",
+    );
+  }
+  await billingProvider().reactivateSubscription(
+    subscription.asaasSubscriptionId,
+    subscription.currentPeriodEnd,
+  );
+  return prisma.subscription.update({
+    where: { id: subscription.id },
+    data: { status: "active", cancelAtPeriodEnd: false },
+  });
+}
+
+// Encerramento definitivo (exclusão de conta / LGPD): apaga a assinatura no
+// Asaas independentemente do status — não reversível, ao contrário de cancel().
+export async function terminateSubscription(userId: string) {
+  const subscription = await prisma.subscription.findUnique({ where: { userId } });
+  if (!subscription) {
+    return;
+  }
+  await billingProvider().cancelSubscription(subscription.asaasSubscriptionId);
 }
 
 export async function getSubscriptionView(userId: string) {
@@ -270,6 +318,10 @@ export async function getSubscriptionView(userId: string) {
   const balance = await getBalance(userId);
 
   // Renovação Pix pendente → o app mostra banner com o QR (clarificação 5 / U1).
+  // Antes de exibir, reconcilia o status local com o Asaas: cobranças
+  // abandonadas ficam "pending" para sempre no nosso banco (o webhook só marca
+  // pagamento confirmado), então consultamos o status real para não deixar
+  // banner "Pix pendente" fantasma.
   const pendingPix = await prisma.paymentTransaction.findFirst({
     where: { userId, status: "pending", method: "pix" },
     orderBy: { createdAt: "desc" },
@@ -280,12 +332,28 @@ export async function getSubscriptionView(userId: string) {
     pixQrImage: string | null;
   } | null = null;
   if (pendingPix) {
-    const qr = await billingProvider().getPaymentPixQr(pendingPix.asaasPaymentId);
-    pendingPixPayment = {
-      amountCents: pendingPix.amountCents,
-      pixQrCode: qr?.payload ?? null,
-      pixQrImage: qr?.encodedImage ?? null,
-    };
+    const realStatus = await billingProvider().getPaymentStatus(pendingPix.asaasPaymentId);
+    const actionable = realStatus === "PENDING" || realStatus === "AWAITING_RISK_ANALYSIS";
+    const paid =
+      realStatus === "RECEIVED" ||
+      realStatus === "CONFIRMED" ||
+      realStatus === "RECEIVED_IN_CASH";
+    if (actionable) {
+      const qr = await billingProvider().getPaymentPixQr(pendingPix.asaasPaymentId);
+      pendingPixPayment = {
+        amountCents: pendingPix.amountCents,
+        pixQrCode: qr?.payload ?? null,
+        pixQrImage: qr?.encodedImage ?? null,
+      };
+    } else if (realStatus && !paid) {
+      // Terminal e sem pagamento (OVERDUE, DELETED, REFUNDED, ...): invalida
+      // localmente para o banner sumir. Se pago, o webhook cuida do ciclo —
+      // não mexemos no status aqui para não atropelar a abertura da cota.
+      await prisma.paymentTransaction.update({
+        where: { id: pendingPix.id },
+        data: { status: "failed" },
+      });
+    }
   }
 
   return {
