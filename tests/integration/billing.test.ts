@@ -24,9 +24,11 @@ vi.mock("next-auth", () => ({
 }));
 vi.mock("next-auth/providers/credentials", () => ({ default: (config: unknown) => config }));
 
+import { billingProvider } from "@/modules/billing/asaas";
 import { POST as subscribeRoute } from "@/app/api/billing/subscribe/route";
 import { POST as upgradeRoute } from "@/app/api/billing/upgrade/route";
 import { POST as cancelRoute } from "@/app/api/billing/cancel/route";
+import { POST as reactivateRoute } from "@/app/api/billing/reactivate/route";
 import { GET as subscriptionRoute } from "@/app/api/billing/subscription/route";
 import { POST as webhookRoute } from "@/app/api/webhooks/asaas/route";
 
@@ -168,6 +170,92 @@ describe("billing with the fake Asaas adapter", () => {
     expect((await getBalance(user.id)).quotaRemaining).toBe(entry.monthlyQuota);
     const submission = await createSubmissionRow(user.id);
     await expect(consumeCredit(user.id, submission.id)).resolves.toMatchObject({ from: "quota" });
+  });
+
+  it("reactivates a canceled subscription in one click, no new charge (soft-cancel)", async () => {
+    const { entry } = await seedPlans();
+    const user = await createUser();
+    const { payment, subscription } = await subscribePix(user.id, entry.id);
+    await confirmPayment("evt_1", payment.asaasPaymentId, subscription.asaasSubscriptionId);
+
+    const before = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    const paymentsBefore = await prisma.paymentTransaction.count({ where: { userId: user.id } });
+
+    actAs(user.id);
+    await cancelRoute(jsonRequest("/api/billing/cancel", "POST"), routeContext({}));
+    const canceled = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    expect(canceled.status).toBe("canceled");
+
+    const response = await reactivateRoute(
+      jsonRequest("/api/billing/reactivate", "POST"),
+      routeContext({}),
+    );
+    expect(response.status).toBe(200);
+
+    const resumed = await prisma.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    expect(resumed.status).toBe("active");
+    expect(resumed.cancelAtPeriodEnd).toBe(false);
+    // Período, cota e cobranças intactos — reativação não cobra nem reseta nada.
+    expect(resumed.currentPeriodEnd.getTime()).toBe(before.currentPeriodEnd.getTime());
+    expect((await getBalance(user.id)).quotaRemaining).toBe(entry.monthlyQuota);
+    expect(await prisma.paymentTransaction.count({ where: { userId: user.id } })).toBe(
+      paymentsBefore,
+    );
+  });
+
+  it("blocks re-subscribing while canceled within the paid period (use reactivate)", async () => {
+    const { entry } = await seedPlans();
+    const user = await createUser();
+    const { payment, subscription } = await subscribePix(user.id, entry.id);
+    await confirmPayment("evt_1", payment.asaasPaymentId, subscription.asaasSubscriptionId);
+
+    actAs(user.id);
+    await cancelRoute(jsonRequest("/api/billing/cancel", "POST"), routeContext({}));
+
+    const response = await subscribeRoute(
+      jsonRequest("/api/billing/subscribe", "POST", {
+        planId: entry.id,
+        method: "pix",
+        cpfCnpj: "39053344705",
+      }),
+      routeContext({}),
+    );
+    expect(response.status).toBe(409);
+  });
+
+  it("clears a stale pending Pix once Asaas reports it terminal", async () => {
+    const { entry } = await seedPlans();
+    const user = await createUser();
+    const { payment, subscription } = await subscribePix(user.id, entry.id);
+    await confirmPayment("evt_1", payment.asaasPaymentId, subscription.asaasSubscriptionId);
+
+    // Cobrança de renovação gerada e nunca paga (QR abandonado).
+    const stale = await prisma.paymentTransaction.create({
+      data: {
+        userId: user.id,
+        subscriptionId: subscription.id,
+        asaasPaymentId: "pay_stale",
+        kind: "cycle",
+        amountCents: entry.priceCents,
+        method: "pix",
+        status: "pending",
+      },
+    });
+
+    vi.spyOn(billingProvider(), "getPaymentStatus").mockResolvedValueOnce("DELETED");
+
+    actAs(user.id);
+    const response = await subscriptionRoute(
+      jsonRequest("/api/billing/subscription", "GET"),
+      routeContext({}),
+    );
+    const view = await response.json();
+    expect(view.pendingPixPayment).toBeNull();
+
+    const reconciled = await prisma.paymentTransaction.findUniqueOrThrow({
+      where: { id: stale.id },
+    });
+    expect(reconciled.status).toBe("failed");
   });
 
   it("upgrade charges the proration and switches plan on confirmation (FR-025/026)", async () => {

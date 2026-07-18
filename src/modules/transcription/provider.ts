@@ -24,8 +24,9 @@ export interface ImageTranscriptionProvider {
   extract(image: Buffer, mimeType: string): Promise<TranscriptionResult>;
 }
 
-// PDF sempre no Vision: batchAnnotateFiles reporta totalPages, base da rejeição
-// de PDF com mais de uma página (FR-011).
+// Vision (batchAnnotateFiles) é a fonte determinística de totalPages, base da
+// rejeição de PDF com mais de uma página (FR-011). A transcrição do texto pode
+// ser reencaminhada ao motor de imagem (Gemini) em extractFromStorage.
 export interface PdfTranscriptionProvider {
   extractPdf(pdf: Buffer): Promise<PdfTranscriptionResult>;
 }
@@ -230,7 +231,8 @@ export function imageTranscriptionProvider(): ImageTranscriptionProvider {
   return cachedImage;
 }
 
-// PDF sempre no Vision (fora dos testes): precisamos de totalPages (FR-011).
+// PDF: Vision fora dos testes — é a fonte de totalPages (FR-011). A transcrição
+// pode seguir para o Gemini (ver extractFromStorage); aqui garantimos a contagem.
 export function pdfTranscriptionProvider(): PdfTranscriptionProvider {
   if (!cachedPdf) {
     cachedPdf = fakeVendorsEnabled() ? fakeProvider() : new VisionTranscriptionProvider();

@@ -27,6 +27,17 @@ export async function grantSignupCredits(userId: string, db: Db = prisma) {
   });
 }
 
+// Concessão manual (operacional/admin): crédito livre, sem ciclo, que não expira
+// — soma direto no freeRemaining. Registrado com kind próprio para auditoria.
+export async function grantManualCredits(userId: string, amount: number, db: Db = prisma) {
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error(`Quantidade de créditos inválida: ${amount} (esperado inteiro positivo)`);
+  }
+  await db.creditTransaction.create({
+    data: { userId, amount, kind: "manual_grant" },
+  });
+}
+
 export async function grantQuota(userId: string, amount: number, cycleId: string, db: Db = prisma) {
   await db.creditTransaction.create({ data: { userId, amount, kind: "quota_grant", cycleId } });
 }

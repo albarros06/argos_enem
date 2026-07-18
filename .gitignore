@@ -20,6 +20,9 @@ playwright-report/
 test-results/
 blob-report/
 
+# claude code local state / memory (not project code; may hold ops notes)
+.claude/
+
 # misc
 *.log
 .DS_Store

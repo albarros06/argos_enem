@@ -49,6 +49,16 @@ export async function processAsaasWebhook(body: AsaasWebhookBody) {
         });
       }
       break;
+    case "PAYMENT_DELETED":
+      // Cobrança apagada/expirada no Asaas (ex.: novo QR emitido sem pagar o
+      // anterior) → invalida a transação para o banner "Pix pendente" sumir.
+      if (body.payment) {
+        await prisma.paymentTransaction.updateMany({
+          where: { asaasPaymentId: body.payment.id, status: "pending" },
+          data: { status: "failed" },
+        });
+      }
+      break;
     case "SUBSCRIPTION_DELETED":
       if (body.subscription) {
         await prisma.subscription.updateMany({

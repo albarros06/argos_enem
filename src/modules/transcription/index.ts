@@ -1,8 +1,8 @@
-import { business } from "@/lib/config";
+import { business, fakeVendorsEnabled } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { storage } from "@/lib/storage";
 import { countEssayLines } from "@/lib/text";
-import { imageTranscriptionProvider, pdfTranscriptionProvider } from "./provider";
+import { imageOcrKind, imageTranscriptionProvider, pdfTranscriptionProvider } from "./provider";
 
 export { enqueueFakeTranscriptionResult, enqueueFakePdfResult, FAKE_ESSAY_TEXT } from "./provider";
 
@@ -11,9 +11,11 @@ export type ExtractionOutcome =
   | { ok: false; reason: "extraction_failed" | "insufficient_text" | "multi_page_pdf" };
 
 // Extrai o texto do arquivo no storage e aplica os limiares de qualidade (FR-006/FR-007).
-// Roteia pelo sufixo da chave: .pdf -> Vision (batchAnnotateFiles, com totalPages para a
-// rejeição de multipágina, FR-011); imagem -> provider de imagem selecionado por config
-// (Gemini/LLM ou Vision). Falha NÃO consome crédito — o chamador marca a submissão failed.
+// Roteia pelo sufixo da chave. PDF: Vision (batchAnnotateFiles) reporta totalPages para a
+// rejeição de multipágina (FR-011), mas a transcrição segue o mesmo motor de OCR de imagem
+// selecionado por config — Gemini/LLM transcreve o PDF direto (application/pdf), Vision
+// reaproveita o texto já extraído. Imagem: provider selecionado por config. Falha NÃO
+// consome crédito — o chamador marca a submissão failed.
 export async function extractFromStorage(imageKey: string): Promise<ExtractionOutcome> {
   const isPdf = imageKey.toLowerCase().endsWith(".pdf");
   let text: string;
@@ -21,15 +23,28 @@ export async function extractFromStorage(imageKey: string): Promise<ExtractionOu
   try {
     const file = await storage().getObject(imageKey);
     if (isPdf) {
-      const result = await logger.vendorCall("google-vision", "batchAnnotateFiles", () =>
+      // Vision é a fonte determinística de totalPages (base da rejeição de PDF
+      // multipágina, FR-011). Só a página 1 é anotada.
+      const pdfResult = await logger.vendorCall("google-vision", "batchAnnotateFiles", () =>
         pdfTranscriptionProvider().extractPdf(file),
       );
       // Redação do ENEM é uma única página: mais de uma página é rejeitada (FR-011).
-      if (result.totalPages > 1) {
+      if (pdfResult.totalPages > 1) {
         return { ok: false, reason: "multi_page_pdf" };
       }
-      text = result.text;
-      meanConfidence = result.meanConfidence;
+      // Mesma qualidade de OCR para PDF e imagem: quando o motor de imagem é o
+      // Gemini, transcreve o PDF pelo LLM (aceita application/pdf direto); com
+      // Vision/fake, reaproveita o texto já extraído pelo batchAnnotateFiles.
+      if (imageOcrKind(fakeVendorsEnabled(), business.imageOcrModelId) === "gemini") {
+        const result = await logger.vendorCall("image-ocr", "transcribe", () =>
+          imageTranscriptionProvider().extract(file, "application/pdf"),
+        );
+        text = result.text;
+        meanConfidence = result.meanConfidence;
+      } else {
+        text = pdfResult.text;
+        meanConfidence = pdfResult.meanConfidence;
+      }
     } else {
       const mimeType = imageKey.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
       const result = await logger.vendorCall("image-ocr", "transcribe", () =>
