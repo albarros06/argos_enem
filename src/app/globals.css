@@ -311,6 +311,95 @@ tbody tr:hover {
   background-color: var(--color-primary-softer);
 }
 
+/* ---- Responsive tables: mobile-first ----
+   Base (mobile): a card list. From 768px up: the plain <table> above.
+   Both markups render; CSS toggles which is visible — no JS/hydration-
+   dependent breakpoint check needed for something this static. */
+.table-responsive {
+  display: none;
+}
+
+.table-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 1rem 0;
+}
+
+.table-card {
+  background-color: var(--color-surface-fg);
+  border: 2px solid var(--color-border-default);
+  border-bottom-width: 3px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  /* a .table-card is sometimes an <a> (the whole row is clickable) — reset
+     the global link color/weight/decoration so only labels/values carry
+     their own colors, same as the table version. */
+  color: var(--color-text-primary);
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.table-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-md);
+  font-size: 0.85rem;
+}
+
+.table-card-label {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .table-responsive {
+    display: table;
+  }
+
+  .table-cards {
+    display: none;
+  }
+}
+
+/* ---- Dense/matrix tables: keep the real table at every width, scroll
+   horizontally instead of collapsing to cards, and pin the identity
+   column so it never scrolls out of view. ---- */
+.table-scroll {
+  overflow-x: auto;
+  border: 2px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin: 1rem 0;
+}
+
+.table-scroll table {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+
+.table-scroll th:first-child,
+.table-scroll td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.table-scroll th:first-child {
+  background-color: var(--color-surface-alt);
+}
+
+.table-scroll td:first-child {
+  background-color: var(--color-surface-fg);
+}
+
 /* Ensure full height layout for proper theme application */
 #__next,
 [id="__next"] {

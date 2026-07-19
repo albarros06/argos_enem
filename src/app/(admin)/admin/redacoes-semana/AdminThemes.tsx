@@ -260,7 +260,7 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
 
       <section>
         <h2>Todos os temas</h2>
-        <table>
+        <table className="table-responsive">
           <thead>
             <tr>
               <th>Tema</th>
@@ -286,6 +286,31 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
             ))}
           </tbody>
         </table>
+        <div className="table-cards">
+          {themes.map((theme) => (
+            <div key={theme.id} className="table-card">
+              <div className="table-card-row">
+                <span className="table-card-label">Tema</span>
+                <span>{theme.title}</span>
+              </div>
+              <div className="table-card-row">
+                <span className="table-card-label">Status</span>
+                <span>{theme.status === "active" ? "Ativo" : "Encerrado"}</span>
+              </div>
+              <div className="table-card-row">
+                <span className="table-card-label">Prazo</span>
+                <span>{new Date(theme.endsAt).toLocaleDateString("pt-BR")}</span>
+              </div>
+              <div className="table-card-row">
+                <span className="table-card-label">Participantes</span>
+                <span>{theme.participantCount}</span>
+              </div>
+              <button className="button secondary" onClick={() => void loadMetrics(theme.id)}>
+                Ver métricas
+              </button>
+            </div>
+          ))}
+        </div>
       </section>
 
       {metrics && (
@@ -295,29 +320,31 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
             <strong>Participantes avaliados:</strong> {metrics.data.participantCount} —{" "}
             <strong>Média:</strong> {metrics.data.avgTotalScore}
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>Competência</th>
-                {SCORE_BUCKETS.map((bucket) => (
-                  <th key={bucket}>{bucket}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[1, 2, 3, 4, 5].map((competency) => {
-                const dist = metrics.data.scoreDistribution[`c${competency}`] ?? {};
-                return (
-                  <tr key={competency}>
-                    <td>C{competency}</td>
-                    {SCORE_BUCKETS.map((bucket) => (
-                      <td key={bucket}>{dist[bucket] ?? 0}</td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Competência</th>
+                  {SCORE_BUCKETS.map((bucket) => (
+                    <th key={bucket}>{bucket}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3, 4, 5].map((competency) => {
+                  const dist = metrics.data.scoreDistribution[`c${competency}`] ?? {};
+                  return (
+                    <tr key={competency}>
+                      <td>C{competency}</td>
+                      {SCORE_BUCKETS.map((bucket) => (
+                        <td key={bucket}>{dist[bucket] ?? 0}</td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
     </>

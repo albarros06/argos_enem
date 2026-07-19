@@ -85,24 +85,44 @@ export default async function WeeklyThemePage() {
         {view.ranking.length === 0 ? (
           <p className="muted">Ainda não há redações corrigidas neste tema.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Participante</th>
-                <th>Nota</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.ranking.map((row) => (
-                <tr key={row.rank}>
-                  <td>{row.rank}</td>
-                  <td>{row.displayName}</td>
-                  <td>{row.totalScore}</td>
+          <>
+            <table className="table-responsive">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Participante</th>
+                  <th>Nota</th>
                 </tr>
+              </thead>
+              <tbody>
+                {view.ranking.map((row) => (
+                  <tr key={row.rank}>
+                    <td>{row.rank}</td>
+                    <td>{row.displayName}</td>
+                    <td>{row.totalScore}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="table-cards">
+              {view.ranking.map((row) => (
+                <div key={row.rank} className="table-card">
+                  <div className="table-card-row">
+                    <span className="table-card-label">#</span>
+                    <span>{row.rank}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-label">Participante</span>
+                    <span>{row.displayName}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-label">Nota</span>
+                    <span>{row.totalScore}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </section>
     </>

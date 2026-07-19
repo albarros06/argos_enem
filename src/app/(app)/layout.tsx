@@ -7,6 +7,7 @@ import { RenewalBanner } from "@/components/RenewalBanner";
 import { LogoutButton } from "@/components/LogoutButton";
 import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import Button from "@/components/Button/Button";
+import { BottomTabBar } from "./BottomTabBar";
 import styles from "./app-layout.module.css";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -65,6 +66,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <RenewalBanner />
         {children}
       </main>
+      <BottomTabBar />
     </>
   );
 }

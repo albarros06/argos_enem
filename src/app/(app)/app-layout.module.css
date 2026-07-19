@@ -1,3 +1,7 @@
+/* Mobile-first: base rules target mobile, min-width:768px layers up to
+   desktop. The nav's link trio (Painel/Redações/Semana) is desktop-only —
+   on mobile it's replaced by the fixed BottomTabBar, which also covers
+   Financeiro (mirrors the "Assinatura" link in .navActions). */
 .nav {
   position: sticky;
   top: 0;
@@ -5,11 +9,10 @@
   background-color: color-mix(in srgb, var(--color-surface-fg) 88%, transparent);
   backdrop-filter: saturate(140%) blur(10px);
   border-bottom: 2px solid var(--color-border-default);
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-md);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-lg);
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .brand {
@@ -37,13 +40,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-lg);
-  flex: 1;
+  flex-direction: column;
+  width: 100%;
 }
 
 .navLinks {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: center;
+  display: none;
 }
 
 .navLink {
@@ -68,44 +70,93 @@
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  margin-left: auto;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .main {
   background-color: var(--color-surface-bg);
   min-height: calc(100vh - 72px);
-  padding: var(--space-2xl) var(--space-xl);
+  padding: var(--space-lg);
+  padding-bottom: calc(var(--space-lg) + 68px);
   max-width: 1120px;
   margin: 0 auto;
   width: 100%;
 }
 
-@media (max-width: 768px) {
+/* ---- Bottom tab bar (mobile only — hidden from 768px up) ---- */
+.bottomTabBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  background-color: var(--color-surface-fg);
+  border-top: 2px solid var(--color-border-default);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-xs) 0;
+}
+
+.bottomTabItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+  padding: var(--space-xs) 0;
+  font-family: var(--type-family-body);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+}
+
+.bottomTabDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.bottomTabItemActive {
+  color: var(--color-primary-brand);
+}
+
+@media (min-width: 768px) {
   .nav {
-    position: static;
-    flex-direction: column;
-    gap: var(--space-md);
-    padding: var(--space-md);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) var(--space-lg);
   }
 
   .navContent {
-    width: 100%;
-    flex-direction: column;
+    flex-direction: row;
+    flex: 1;
+    width: auto;
   }
 
   .navLinks {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: flex;
+    gap: var(--space-xs);
+    align-items: center;
   }
 
   .navActions {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
+    width: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    margin-left: auto;
   }
 
   .main {
-    padding: var(--space-lg);
+    padding: var(--space-2xl) var(--space-xl);
+    padding-bottom: var(--space-2xl);
+  }
+
+  .bottomTabBar {
+    display: none;
   }
 }
