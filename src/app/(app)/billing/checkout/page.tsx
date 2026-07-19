@@ -67,6 +67,9 @@ function CheckoutForm() {
             expiryMonth: form.get("expiryMonth"),
             expiryYear: form.get("expiryYear"),
             ccv: form.get("ccv"),
+            postalCode: String(form.get("postalCode") ?? "").replace(/\D/g, ""),
+            addressNumber: form.get("addressNumber"),
+            phone: String(form.get("phone") ?? "").replace(/\D/g, ""),
           }
         : undefined;
     const response = await fetch("/api/billing/subscribe", {
@@ -182,6 +185,24 @@ function CheckoutForm() {
               <input name="expiryYear" placeholder="AAAA" maxLength={4} required />
               <input name="ccv" placeholder="CVV" maxLength={4} required />
             </p>
+            <label htmlFor="postalCode">CEP do titular</label>
+            <input
+              id="postalCode"
+              name="postalCode"
+              inputMode="numeric"
+              placeholder="Somente números"
+              required
+            />
+            <label htmlFor="addressNumber">Número do endereço</label>
+            <input id="addressNumber" name="addressNumber" required />
+            <label htmlFor="phone">Telefone do titular</label>
+            <input
+              id="phone"
+              name="phone"
+              inputMode="tel"
+              placeholder="DDD + número"
+              required
+            />
           </>
         )}
 
