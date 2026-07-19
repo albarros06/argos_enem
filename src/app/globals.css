@@ -88,6 +88,18 @@ button,
     opacity 150ms ease;
 }
 
+/* Belt-and-suspenders spacing: several pages put two buttons in one <p>
+   separated only by a literal " " text node, which reads as touching on
+   narrow screens once they wrap to their own line — this margin-bottom
+   keeps wrapped rows apart regardless of container width. Scoped to <p>
+   children only, so it doesn't touch standalone buttons elsewhere (e.g.
+   the nav's theme toggle / overflow-menu trigger, which need to stay
+   flex-centered against their siblings, not shifted by an extra margin). */
+p > button,
+p > .button {
+  margin-bottom: 0.5rem;
+}
+
 /* .button is used on <Link> across pages — make it a primary action */
 .button {
   display: inline-flex;
@@ -140,6 +152,16 @@ button:disabled,
   box-shadow: 0 0 0 var(--color-border-strong);
 }
 
+/* Buttons placed side by side (e.g. two <button>/.button siblings in the
+   same <p>) rely on this for spacing instead of a literal " " text node,
+   which reads as far too tight given the buttons' bold uppercase padding. */
+.button + .button,
+button + .button,
+.button + button,
+button + button {
+  margin-left: 0.75rem;
+}
+
 /* ---- Form controls ---- */
 input,
 select,
@@ -155,6 +177,16 @@ textarea {
   transition:
     border-color 150ms ease,
     box-shadow 150ms ease;
+}
+
+/* Text-like fields sit directly against whatever follows (no bottom margin
+   of their own) — give them breathing room before the next label/button,
+   but leave checkboxes/radios alone since those sit inline with their
+   label text rather than stacked full-width. */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  margin-bottom: 0.9rem;
 }
 
 input::placeholder,

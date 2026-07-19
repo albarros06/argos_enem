@@ -1,7 +1,10 @@
 /* Mobile-first: base rules target mobile, min-width:768px layers up to
-   desktop. The nav's link trio (Painel/Redações/Semana) is desktop-only —
-   on mobile it's replaced by the fixed BottomTabBar, which also covers
-   Financeiro (mirrors the "Assinatura" link in .navActions). */
+   desktop. On mobile, the nav collapses to brand + the persistent credit
+   indicator (FR-020) + theme toggle + an overflow menu (Admin/Assinatura/
+   Sair) — navigation moves to the fixed BottomTabBar, and "Nova redação"
+   moves to a floating action button. Anything wrapped in .desktopOnly is
+   the unchanged original desktop nav, just hidden below 768px in favor of
+   its mobile equivalent (BottomTabBar / NavOverflowMenu / the FAB). */
 .nav {
   position: sticky;
   top: 0;
@@ -9,9 +12,10 @@
   background-color: color-mix(in srgb, var(--color-surface-fg) 88%, transparent);
   backdrop-filter: saturate(140%) blur(10px);
   border-bottom: 2px solid var(--color-border-default);
-  padding: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-md);
 }
 
@@ -40,8 +44,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-lg);
-  flex-direction: column;
-  width: 100%;
 }
 
 .navLinks {
@@ -69,10 +71,11 @@
 .navActions {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  width: 100%;
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.desktopOnly {
+  display: none;
 }
 
 .main {
@@ -124,18 +127,102 @@
   color: var(--color-primary-brand);
 }
 
+/* ---- Nav overflow menu (mobile only — Admin/Assinatura/Sair) ---- */
+.overflowMenu {
+  position: relative;
+}
+
+.overflowTrigger {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-border-default);
+  background-color: var(--color-surface-fg);
+  color: var(--color-text-secondary);
+  font-family: var(--type-family-body);
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.overflowPanel {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  right: 0;
+  z-index: 60;
+  min-width: 160px;
+  background-color: var(--color-surface-fg);
+  border: 2px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.overflowLink {
+  font-family: var(--type-family-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+}
+
+.overflowLink:hover {
+  background-color: var(--color-surface-alt);
+  color: var(--color-primary-brand);
+}
+
+.overflowLogout {
+  padding: var(--space-xs) var(--space-md) 0;
+}
+
+/* ---- Floating action button: "Nova redação" (mobile only) ---- */
+.fab {
+  position: fixed;
+  right: var(--space-lg);
+  bottom: calc(68px + var(--space-md));
+  z-index: 45;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary-brand);
+  color: var(--color-text-on-brand);
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow:
+    0 var(--btn-drop) 0 var(--color-primary-strong),
+    var(--shadow-lg);
+  transition:
+    transform 60ms ease,
+    box-shadow 60ms ease,
+    background-color 150ms ease;
+}
+
+.fab:hover {
+  background-color: var(--color-primary-hover);
+  color: var(--color-text-on-brand);
+}
+
+.fab:active {
+  transform: translateY(var(--btn-drop));
+  box-shadow:
+    0 0 0 var(--color-primary-strong),
+    var(--shadow-lg);
+}
+
 @media (min-width: 768px) {
   .nav {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
     padding: var(--space-md) var(--space-lg);
-  }
-
-  .navContent {
-    flex-direction: row;
-    flex: 1;
-    width: auto;
   }
 
   .navLinks {
@@ -145,10 +232,12 @@
   }
 
   .navActions {
-    width: auto;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
+    gap: var(--space-md);
     margin-left: auto;
+  }
+
+  .desktopOnly {
+    display: contents;
   }
 
   .main {
@@ -157,6 +246,14 @@
   }
 
   .bottomTabBar {
+    display: none;
+  }
+
+  .overflowMenu {
+    display: none;
+  }
+
+  .fab {
     display: none;
   }
 }
