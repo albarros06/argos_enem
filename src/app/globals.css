@@ -124,6 +124,22 @@ button:disabled,
   transform: none;
 }
 
+.button.secondary {
+  color: var(--color-primary-brand);
+  background-color: var(--color-surface-fg);
+  border: 2px solid var(--color-border-strong);
+  box-shadow: 0 var(--btn-drop) 0 var(--color-border-strong);
+}
+
+.button.secondary:hover {
+  background-color: var(--color-primary-softer);
+  color: var(--color-primary-brand);
+}
+
+.button.secondary:active {
+  box-shadow: 0 0 0 var(--color-border-strong);
+}
+
 /* ---- Form controls ---- */
 input,
 select,

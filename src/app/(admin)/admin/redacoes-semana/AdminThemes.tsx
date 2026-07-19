@@ -159,6 +159,7 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
             />
             <p>
               <button
+                className="button"
                 disabled={working || !newEndsAt}
                 onClick={() =>
                   void run(() => patchActive({ action: "extend", endsAt: new Date(newEndsAt) }))
@@ -167,7 +168,7 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
                 Estender prazo
               </button>{" "}
               <button
-                className="secondary"
+                className="button secondary"
                 disabled={working}
                 onClick={() => {
                   if (window.confirm("Encerrar o tema agora? O ranking público deixará de aparecer.")) {
@@ -191,7 +192,7 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
                     ? `Texto: ${content.body?.slice(0, 80)}…`
                     : `Arquivo (${content.fileType})`}{" "}
                   <button
-                    className="secondary"
+                    className="button secondary"
                     disabled={working}
                     onClick={() => void run(() => deleteContent(content.id))}
                   >
@@ -210,7 +211,7 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
             onChange={(event) => setTextBody(event.target.value)}
           />
           <p>
-            <button disabled={working || !textBody.trim()} onClick={() => void run(addText)}>
+            <button className="button" disabled={working || !textBody.trim()} onClick={() => void run(addText)}>
               Adicionar texto
             </button>
           </p>
@@ -250,7 +251,7 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
             onChange={(event) => setDurationDays(Number(event.target.value))}
           />
           <p>
-            <button disabled={working || !title.trim()} onClick={() => void run(createTheme)}>
+            <button className="button" disabled={working || !title.trim()} onClick={() => void run(createTheme)}>
               Publicar tema
             </button>
           </p>
@@ -277,7 +278,7 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
                 <td>{new Date(theme.endsAt).toLocaleDateString("pt-BR")}</td>
                 <td>{theme.participantCount}</td>
                 <td>
-                  <button className="secondary" onClick={() => void loadMetrics(theme.id)}>
+                  <button className="button secondary" onClick={() => void loadMetrics(theme.id)}>
                     Ver
                   </button>
                 </td>

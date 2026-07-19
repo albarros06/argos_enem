@@ -195,17 +195,17 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
       {duplicateWarning && (
         <div className="banner">
           <p>Este arquivo parece já ter sido enviado. Quer enviar mesmo assim?</p>
-          <button type="button" onClick={() => void submit(true)}>
+          <button type="button" className="button" onClick={() => void submit(true)}>
             Enviar mesmo assim
           </button>{" "}
-          <button type="button" className="secondary" onClick={() => setDuplicateWarning(false)}>
+          <button type="button" className="button secondary" onClick={() => setDuplicateWarning(false)}>
             Cancelar
           </button>
         </div>
       )}
 
       <p>
-        <button type="submit" disabled={phase !== "idle"}>
+        <button type="submit" className="button" disabled={phase !== "idle"}>
           {phase === "idle"
             ? "Enviar redação"
             : phase === "uploading"

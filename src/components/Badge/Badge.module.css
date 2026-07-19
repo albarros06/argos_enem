@@ -14,7 +14,7 @@
 
 .variant-primary {
   background-color: var(--color-primary-brand);
-  color: white;
+  color: var(--color-text-on-brand);
 }
 
 .variant-secondary {
@@ -25,15 +25,15 @@
 
 .variant-error {
   background-color: var(--color-error);
-  color: white;
+  color: var(--color-text-on-brand);
 }
 
 .variant-warning {
   background-color: var(--color-warning);
-  color: white;
+  color: var(--color-text-on-brand);
 }
 
 .variant-success {
   background-color: var(--color-success);
-  color: white;
+  color: var(--color-text-on-brand);
 }

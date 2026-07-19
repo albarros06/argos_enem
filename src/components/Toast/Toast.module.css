@@ -25,22 +25,22 @@
 
 .type-info {
   background-color: var(--color-info);
-  color: white;
+  color: var(--color-text-on-brand);
 }
 
 .type-success {
   background-color: var(--color-success);
-  color: white;
+  color: var(--color-text-on-brand);
 }
 
 .type-warning {
   background-color: var(--color-warning);
-  color: white;
+  color: var(--color-text-on-brand);
 }
 
 .type-error {
   background-color: var(--color-error);
-  color: white;
+  color: var(--color-text-on-brand);
 }
 
 .toast p {

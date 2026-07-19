@@ -132,10 +132,10 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
       )}
       {error && <p className="error">{error}</p>}
       <p>
-        <button onClick={() => void confirm()} disabled={working}>
+        <button className="button" onClick={() => void confirm()} disabled={working}>
           {working ? "Confirmando..." : "Confirmar e corrigir (usa 1 crédito)"}
         </button>{" "}
-        <button className="secondary" onClick={() => void abandon()} disabled={working}>
+        <button className="button secondary" onClick={() => void abandon()} disabled={working}>
           Descartar
         </button>
       </p>

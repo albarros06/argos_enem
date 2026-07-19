@@ -187,7 +187,7 @@ function CheckoutForm() {
 
         {error && <p className="error">{error}</p>}
         <p>
-          <button type="submit" disabled={submitting}>
+          <button type="submit" className="button" disabled={submitting}>
             {submitting ? "Processando..." : `Assinar por ${formatPrice(plan.priceCents)}/mês`}
           </button>
         </p>

@@ -212,13 +212,13 @@ export default function ManageSubscriptionPage() {
 
       <p>
         {subscription.tier === "entry" && subscription.status === "active" && !upgradePix && (
-          <button onClick={() => void upgradeToPremium()} disabled={working}>
+          <button className="button" onClick={() => void upgradeToPremium()} disabled={working}>
             Fazer upgrade para o Premium
           </button>
         )}{" "}
         {subscription.status === "canceled" &&
           (new Date(subscription.currentPeriodEnd) > new Date() ? (
-            <button onClick={() => void reactivateSubscription()} disabled={working}>
+            <button className="button" onClick={() => void reactivateSubscription()} disabled={working}>
               Reativar assinatura
             </button>
           ) : (
@@ -228,7 +228,7 @@ export default function ManageSubscriptionPage() {
           ))}{" "}
         {["active", "past_due"].includes(subscription.status) && (
           <button
-            className="secondary"
+            className="button secondary"
             onClick={() => void cancelSubscription()}
             disabled={working}
           >

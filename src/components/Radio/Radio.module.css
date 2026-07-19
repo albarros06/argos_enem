@@ -38,6 +38,15 @@
   box-shadow: inset 0 0 0 4px var(--color-surface-bg);
 }
 
+.input:focus-visible + .label .radio {
+  box-shadow: var(--shadow-focus);
+  border-color: var(--color-primary-brand);
+}
+
+.input:checked:focus-visible + .label .radio {
+  box-shadow: var(--shadow-focus), inset 0 0 0 4px var(--color-surface-bg);
+}
+
 .input:disabled + .label {
   opacity: 0.5;
   cursor: not-allowed;
