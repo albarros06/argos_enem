@@ -1,0 +1,51 @@
+name: Cron sweep
+
+# Aciona as varreduras de tempo (billing / submissões / temas semanais) com
+# cadência mais fina do que o Vercel Cron permite no plano Hobby (1x/dia). O
+# endpoint /api/cron/sweep já é protegido pelo Bearer token, então qualquer
+# agendador externo pode chamá-lo. Fecha temas semanais vencidos sem esperar
+# até 24h.
+#
+# Requer no repositório:
+#   - Secret CRON_SECRET  → mesmo valor da env var CRON_SECRET na Vercel
+#   - Variable APP_URL     → ex.: https://seu-app.vercel.app (sem barra final)
+on:
+  schedule:
+    # A cada 15 min. O GitHub pode atrasar/agrupar execuções agendadas sob
+    # carga — trate como "aproximadamente a cada 15 min", não exato.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: cron-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call sweep endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_URL:-}" ]; then
+            echo "::error::Repository variable APP_URL não está definida."
+            exit 1
+          fi
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Repository secret CRON_SECRET não está definido."
+            exit 1
+          fi
+          status=$(curl -sS -o /tmp/sweep-body.json -w "%{http_code}" \
+            -X POST "${APP_URL%/}/api/cron/sweep" \
+            -H "Authorization: Bearer ${CRON_SECRET}")
+          echo "HTTP ${status}"
+          cat /tmp/sweep-body.json || true
+          echo
+          if [ "${status}" != "200" ]; then
+            echo "::error::Sweep retornou HTTP ${status}."
+            exit 1
+          fi

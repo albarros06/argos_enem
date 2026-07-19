@@ -9,12 +9,26 @@ export interface CardInput {
   ccv: string;
 }
 
+// Dados do titular exigidos pelo Asaas em toda cobrança de cartão com dados
+// crus (creditCardHolderInfo). Precisam bater com o cadastro do emissor, senão
+// a transação é negada por suspeita de fraude.
+export interface CardHolderInfo {
+  name: string;
+  email: string;
+  cpfCnpj: string;
+  postalCode: string;
+  addressNumber: string;
+  phone: string;
+}
+
 export interface CreateSubscriptionInput {
   customerId: string;
   valueCents: number;
   description: string;
   method: "card" | "pix";
   card?: CardInput;
+  holderInfo?: CardHolderInfo;
+  remoteIp?: string;
   externalReference: string;
 }
 
@@ -24,6 +38,8 @@ export interface CreateChargeInput {
   description: string;
   method: "card" | "pix";
   card?: CardInput;
+  holderInfo?: CardHolderInfo;
+  remoteIp?: string;
   externalReference: string;
 }
 
@@ -61,6 +77,30 @@ function toReais(valueCents: number): number {
 
 function billingType(method: "card" | "pix"): string {
   return method === "card" ? "CREDIT_CARD" : "PIX";
+}
+
+// Bloco de cartão que o Asaas exige para captura direta: o cartão em si, os
+// dados do titular (creditCardHolderInfo) e o IP do comprador (remoteIp). Vazio
+// quando não há cartão (Pix), para não enviar campos indevidos.
+function creditCardPayload(input: {
+  card?: CardInput;
+  holderInfo?: CardHolderInfo;
+  remoteIp?: string;
+}): Record<string, unknown> {
+  if (!input.card) {
+    return {};
+  }
+  return {
+    creditCard: {
+      holderName: input.card.holderName,
+      number: input.card.number,
+      expiryMonth: input.card.expiryMonth,
+      expiryYear: input.card.expiryYear,
+      ccv: input.card.ccv,
+    },
+    ...(input.holderInfo ? { creditCardHolderInfo: input.holderInfo } : {}),
+    ...(input.remoteIp ? { remoteIp: input.remoteIp } : {}),
+  };
 }
 
 class AsaasProvider implements BillingProvider {
@@ -107,17 +147,7 @@ class AsaasProvider implements BillingProvider {
       cycle: "MONTHLY",
       description: input.description,
       externalReference: input.externalReference,
-      ...(input.card
-        ? {
-            creditCard: {
-              holderName: input.card.holderName,
-              number: input.card.number,
-              expiryMonth: input.card.expiryMonth,
-              expiryYear: input.card.expiryYear,
-              ccv: input.card.ccv,
-            },
-          }
-        : {}),
+      ...creditCardPayload(input),
     });
     const payments = await this.request<{ data: { id: string }[] }>(
       "GET",
@@ -134,6 +164,7 @@ class AsaasProvider implements BillingProvider {
       dueDate: new Date().toISOString().slice(0, 10),
       description: input.description,
       externalReference: input.externalReference,
+      ...creditCardPayload(input),
     });
     return { id: charge.id };
   }

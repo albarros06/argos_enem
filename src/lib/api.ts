@@ -70,6 +70,20 @@ export function handleRoute<P = Record<string, never>>(
   };
 }
 
+// IP de origem do comprador para o campo `remoteIp` do Asaas (antifraude). O
+// Asaas exige o IP do cliente final, nunca o do servidor — por isso lemos os
+// cabeçalhos do proxy. Retorna null quando indisponível (ex.: ambiente local).
+export function clientIp(request: Request): string | null {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) {
+      return first;
+    }
+  }
+  return request.headers.get("x-real-ip");
+}
+
 export async function parseBody<T>(request: Request, schema: ZodType<T>): Promise<T> {
   let raw: unknown;
   try {

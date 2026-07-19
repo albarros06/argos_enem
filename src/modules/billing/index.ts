@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/api";
 import { getBalance } from "@/modules/credits";
 import { isValidCpfCnpj, sanitizeCpfCnpj } from "@/lib/cpfCnpj";
-import { billingProvider } from "./asaas";
+import { billingProvider, type CardHolderInfo } from "./asaas";
 
 export { processAsaasWebhook } from "./webhooks";
 export { startBillingSweep, sweepBillingCycles } from "./cycles";
@@ -47,6 +47,17 @@ const cardSchema = z.object({
   expiryMonth: z.string().length(2),
   expiryYear: z.string().length(4),
   ccv: z.string().min(3).max(4),
+  // Dados do titular exigidos pelo Asaas (creditCardHolderInfo) na captura de
+  // cartão. Nome/e-mail/CPF vêm da conta; CEP, número e telefone do formulário.
+  postalCode: z
+    .string()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length === 8, "CEP inválido."),
+  addressNumber: z.string().min(1),
+  phone: z
+    .string()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length >= 10, "Telefone inválido."),
 });
 
 export const subscribeSchema = z.object({
@@ -59,9 +70,31 @@ export const subscribeSchema = z.object({
     .transform(sanitizeCpfCnpj),
 });
 
+// Monta o creditCardHolderInfo exigido pelo Asaas: nome/e-mail/CPF da conta +
+// endereço/telefone do formulário. Deve bater com o cadastro do emissor.
+function cardHolderInfo(
+  user: { email: string },
+  cpfCnpj: string,
+  card: z.infer<typeof cardSchema>,
+): CardHolderInfo {
+  return {
+    name: card.holderName,
+    email: user.email,
+    cpfCnpj,
+    postalCode: card.postalCode,
+    addressNumber: card.addressNumber,
+    phone: card.phone,
+  };
+}
+
 // Cria a assinatura no Asaas SEM conceder nada — direitos só chegam pelo
-// webhook de pagamento confirmado (FR-024).
-export async function subscribe(userId: string, input: z.infer<typeof subscribeSchema>) {
+// webhook de pagamento confirmado (FR-024). remoteIp é o IP do comprador,
+// obrigatório na captura de cartão (antifraude do Asaas).
+export async function subscribe(
+  userId: string,
+  input: z.infer<typeof subscribeSchema>,
+  remoteIp?: string | null,
+) {
   const plan = await prisma.subscriptionPlan.findUnique({ where: { id: input.planId } });
   if (!plan || !plan.active) {
     throw new ApiError("VALIDATION_ERROR", 400, "Plano não encontrado.");
@@ -107,6 +140,8 @@ export async function subscribe(userId: string, input: z.infer<typeof subscribeS
     description: `Argos — ${plan.name}`,
     method: input.method,
     card: input.card,
+    holderInfo: input.card ? cardHolderInfo(user, input.cpfCnpj, input.card) : undefined,
+    remoteIp: remoteIp ?? undefined,
     externalReference: userId,
   });
 
@@ -185,7 +220,11 @@ export const upgradeSchema = z.object({
 
 // Upgrade entry → premium com cobrança proporcional (R4, FR-025/026).
 // A troca de plano e a cota extra são aplicadas na confirmação da cobrança.
-export async function upgrade(userId: string, input: z.infer<typeof upgradeSchema>) {
+export async function upgrade(
+  userId: string,
+  input: z.infer<typeof upgradeSchema>,
+  remoteIp?: string | null,
+) {
   const subscription = await prisma.subscription.findUnique({
     where: { userId },
     include: { plan: true },
@@ -226,12 +265,17 @@ export async function upgrade(userId: string, input: z.infer<typeof upgradeSchem
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  if (input.card && !user.cpfCnpj) {
+    throw new ApiError("VALIDATION_ERROR", 400, "CPF ou CNPJ do titular não encontrado.");
+  }
   const charge = await billingProvider().createOneOffCharge({
     customerId: user.asaasCustomerId!,
     valueCents: prorationCents,
     description: "Argos — upgrade para o plano Premium (proporcional)",
     method: input.method,
     card: input.card,
+    holderInfo: input.card ? cardHolderInfo(user, user.cpfCnpj!, input.card) : undefined,
+    remoteIp: remoteIp ?? undefined,
     externalReference: userId,
   });
   await prisma.paymentTransaction.create({
