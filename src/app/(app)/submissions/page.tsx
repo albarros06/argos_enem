@@ -38,36 +38,72 @@ export default async function SubmissionsPage({
           </p>
         </div>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tema</th>
-              <th>Status</th>
-              <th>Nota</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          <table className="table-responsive">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tema</th>
+                <th>Status</th>
+                <th>Nota</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((submission) => {
+                const status = STATUS_LABELS[submission.status];
+                return (
+                  <tr key={submission.id}>
+                    <td>{new Date(submission.createdAt).toLocaleDateString("pt-BR")}</td>
+                    <td>
+                      <Link href={`/submissions/${submission.id}`}>{submission.themeText}</Link>
+                    </td>
+                    <td>
+                      <span className={`badge ${status.badge}`}>{status.label}</span>{" "}
+                      {submission.resultReady && (
+                        <span className="badge success">Resultado novo</span>
+                      )}
+                    </td>
+                    <td>{submission.totalScore ?? "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="table-cards">
             {items.map((submission) => {
               const status = STATUS_LABELS[submission.status];
               return (
-                <tr key={submission.id}>
-                  <td>{new Date(submission.createdAt).toLocaleDateString("pt-BR")}</td>
-                  <td>
-                    <Link href={`/submissions/${submission.id}`}>{submission.themeText}</Link>
-                  </td>
-                  <td>
-                    <span className={`badge ${status.badge}`}>{status.label}</span>{" "}
-                    {submission.resultReady && (
-                      <span className="badge success">Resultado novo</span>
-                    )}
-                  </td>
-                  <td>{submission.totalScore ?? "—"}</td>
-                </tr>
+                <Link
+                  key={submission.id}
+                  href={`/submissions/${submission.id}`}
+                  className="table-card"
+                >
+                  <div className="table-card-row">
+                    <span className="table-card-label">Tema</span>
+                    <span>{submission.themeText}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-label">Data</span>
+                    <span>{new Date(submission.createdAt).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-label">Status</span>
+                    <span>
+                      <span className={`badge ${status.badge}`}>{status.label}</span>{" "}
+                      {submission.resultReady && (
+                        <span className="badge success">Resultado novo</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-label">Nota</span>
+                    <span>{submission.totalScore ?? "—"}</span>
+                  </div>
+                </Link>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        </>
       )}
       {totalPages > 1 && (
         <p>

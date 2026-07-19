@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     <>
       <h1 className={styles.title}>Seu progresso</h1>
       <p className={styles.subtitle}>
-        {submissionCount} redação{submissionCount > 1 ? "ões" : ""} corrigida
+        {submissionCount} {submissionCount > 1 ? "redações" : "redação"} corrigida
         {submissionCount > 1 ? "s" : ""}
       </p>
 

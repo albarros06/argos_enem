@@ -7,6 +7,8 @@ import { RenewalBanner } from "@/components/RenewalBanner";
 import { LogoutButton } from "@/components/LogoutButton";
 import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import Button from "@/components/Button/Button";
+import { BottomTabBar } from "./BottomTabBar";
+import { NavOverflowMenu } from "./NavOverflowMenu";
 import styles from "./app-layout.module.css";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -41,30 +43,40 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Redação da semana
             </Link>
           </div>
-          <Link href="/submissions/new">
-            <Button variant="primary" size="md">
-              Nova redação
-            </Button>
-          </Link>
+          <div className={styles.desktopOnly}>
+            <Link href="/submissions/new">
+              <Button variant="primary" size="md">
+                Nova redação
+              </Button>
+            </Link>
+          </div>
         </div>
         <div className={styles.navActions}>
+          {/* Sempre visível: indicador persistente de créditos (FR-020). */}
           <ThemeToggleClient />
           <CreditBalance />
-          {user?.role === "admin" && (
-            <Link href="/admin" className={styles.navLink}>
-              Admin
+          <div className={styles.desktopOnly}>
+            {user?.role === "admin" && (
+              <Link href="/admin" className={styles.navLink}>
+                Admin
+              </Link>
+            )}
+            <Link href="/billing/manage" className={styles.navLink}>
+              Assinatura
             </Link>
-          )}
-          <Link href="/billing/manage" className={styles.navLink}>
-            Assinatura
-          </Link>
-          <LogoutButton />
+            <LogoutButton />
+          </div>
+          <NavOverflowMenu isAdmin={user?.role === "admin"} />
         </div>
       </nav>
       <main className={styles.main}>
         <RenewalBanner />
         {children}
       </main>
+      <Link href="/submissions/new" className={styles.fab} aria-label="Nova redação">
+        +
+      </Link>
+      <BottomTabBar />
     </>
   );
 }
