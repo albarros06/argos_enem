@@ -23,6 +23,11 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().default(""),
   EMAIL_FROM: z.string().default("Argos <onboarding@resend.dev>"),
   FAKE_VENDORS: z.string().default(""),
+  // Segredo do Vercel Cron: quando definido, a plataforma envia
+  // `Authorization: Bearer <CRON_SECRET>` nas chamadas agendadas. As varreduras
+  // de tempo (billing/submissões/temas) rodam via cron na Vercel — ver
+  // instrumentation.ts (setInterval só fora da Vercel) e /api/cron/sweep.
+  CRON_SECRET: z.string().default(""),
 });
 
 export type Env = z.infer<typeof envSchema>;
