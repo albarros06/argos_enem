@@ -1,0 +1,46 @@
+{
+  "projectId": "31df3ddb-a877-4641-afe5-c77ccf78b81b",
+  "shape": "package",
+  "pkg": "argos-enem",
+  "globalName": "ArgosDS",
+  "srcDir": "src/components",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".design-sync/style-entry.css",
+  "extraEntries": ["./src/contexts/ThemeContext.tsx"],
+  "provider": {
+    "component": "ThemeProvider"
+  },
+  "runtimeFontPrefixes": ["Nunito"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "libOverrides": {
+    "source-kit.mjs": "synth-entry bundle-file filter must honor componentSrcMap:null too, not just the component name-list — see fork header"
+  },
+  "overrides": {
+    "Dialog": { "cardMode": "single", "viewport": "480x420" },
+    "Modal": { "cardMode": "single", "primaryStory": "WithTitle" },
+    "Toast": { "cardMode": "single", "primaryStory": "Info" },
+    "Tooltip": { "cardMode": "column" }
+  },
+  "componentSrcMap": {
+    "ThemeToggleClient": null,
+    "LogoutButton": null,
+    "RenewalBanner": null,
+    "AnnotatedText": null,
+    "CreditBalance": null
+  },
+  "dtsPropsFor": {
+    "Badge": "variant?: 'primary' | 'secondary' | 'error' | 'warning' | 'success'; children: React.ReactNode; className?: string;",
+    "Button": "variant?: 'primary' | 'secondary' | 'ghost'; size?: 'sm' | 'md' | 'lg'; children: React.ReactNode; disabled?: boolean; type?: 'button' | 'submit' | 'reset'; onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void; className?: string;",
+    "Card": "children: React.ReactNode; variant?: 'default' | 'elevated' | 'outlined'; className?: string;",
+    "Checkbox": "label?: string; checked?: boolean; defaultChecked?: boolean; disabled?: boolean; onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void; id?: string;",
+    "Dialog": "isOpen: boolean; onClose: () => void; title: string; description?: string; primaryAction?: { label: string; onClick: () => void }; secondaryAction?: { label: string; onClick: () => void }; children?: React.ReactNode;",
+    "Input": "label?: string; error?: string; size?: 'sm' | 'md' | 'lg'; placeholder?: string; disabled?: boolean; value?: string; onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void; id?: string;",
+    "Modal": "isOpen: boolean; onClose: () => void; title?: string; children: React.ReactNode;",
+    "Radio": "label?: string; checked?: boolean; defaultChecked?: boolean; disabled?: boolean; name?: string; onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void; id?: string;",
+    "Select": "options: Array<{ value: string; label: string }>; value?: string; onChange?: (value: string) => void; placeholder?: string; disabled?: boolean;",
+    "Switch": "label?: string; checked?: boolean; defaultChecked?: boolean; disabled?: boolean; onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void; id?: string;",
+    "Tabs": "tabs: Array<{ label: string; content: React.ReactNode }>; defaultTab?: number;",
+    "Toast": "message: string; type?: 'info' | 'success' | 'warning' | 'error'; duration?: number; onClose?: () => void;",
+    "Tooltip": "content: React.ReactNode; children: React.ReactNode; position?: 'top' | 'bottom' | 'left' | 'right';"
+  }
+}

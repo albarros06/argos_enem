@@ -23,6 +23,15 @@ blob-report/
 # claude code local state / memory (not project code; may hold ops notes)
 .claude/
 
+# design-sync (Claude Design) — generated build output and machine state;
+# .design-sync/ itself is NOT ignored (config.json, NOTES.md, conventions.md,
+# previews/, overrides/ are the durable, committed set)
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+
 # misc
 *.log
 .DS_Store
