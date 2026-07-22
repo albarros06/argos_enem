@@ -42,6 +42,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link href="/redacoes-semana" className={styles.navLink}>
               Redação da semana
             </Link>
+            <Link href="/groups" className={styles.navLink}>
+              Grupos
+            </Link>
           </div>
           <div className={styles.desktopOnly}>
             <Link href="/submissions/new">
