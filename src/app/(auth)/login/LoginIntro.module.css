@@ -1,0 +1,198 @@
+@keyframes eyeLidOpen {
+  0% {
+    transform: scaleY(0.05);
+  }
+  8% {
+    transform: scaleY(1);
+  }
+  18% {
+    transform: scaleY(0.05);
+  }
+  28% {
+    transform: scaleY(1);
+  }
+  38% {
+    transform: scaleY(0.05);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+  78% {
+    transform: scaleY(1);
+  }
+  90% {
+    transform: scaleY(1.14);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes irisIn {
+  0% {
+    opacity: 1;
+    transform: scale(0.85);
+  }
+  78% {
+    opacity: 1;
+    transform: scale(0.85);
+  }
+  90% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes browLift {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(0);
+  }
+  90% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes introOverlayFade {
+  0% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-brand);
+  animation: introOverlayFade 2s ease forwards;
+}
+
+.overlayStatic {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.brow {
+  width: 100px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.55);
+  animation: browLift 2s ease forwards;
+}
+
+.browStatic {
+  animation: none;
+  transform: translateY(-2px);
+}
+
+.eye {
+  width: 140px;
+  height: 78px;
+  border-radius: 50%;
+  background: var(--color-surface-fg);
+  box-shadow: var(--shadow-glow);
+  transform-origin: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: eyeLidOpen 2s cubic-bezier(0.45, 0, 0.2, 1) forwards;
+}
+
+.eyeStatic {
+  animation: none;
+  transform: scaleY(1);
+}
+
+.iris {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--color-primary-brand);
+  position: relative;
+  animation: irisIn 2s ease forwards;
+}
+
+.irisStatic {
+  animation: none;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.irisHighlight {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.wordmark {
+  color: var(--color-text-on-brand);
+  font-family: var(--type-family-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
+/* Defesa em profundidade: mesmo que o JS ainda não tenha decidido o estado
+   estático (T006), a preferência do sistema por movimento reduzido já
+   desativa as animações aqui. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .brow,
+  .eye,
+  .iris {
+    animation: none;
+  }
+
+  .eye {
+    transform: scaleY(1);
+  }
+
+  .iris {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .brow {
+    transform: translateY(-2px);
+  }
+}
