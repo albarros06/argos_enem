@@ -54,14 +54,12 @@ export async function requireUser(): Promise<User> {
   return user;
 }
 
-export async function requireVerifiedUser(): Promise<User> {
+export async function requireVerifiedUser(
+  message = "Confirme seu e-mail antes de enviar uma redação.",
+): Promise<User> {
   const user = await requireUser();
   if (!user.emailVerifiedAt) {
-    throw new ApiError(
-      "EMAIL_NOT_VERIFIED",
-      403,
-      "Confirme seu e-mail antes de enviar uma redação.",
-    );
+    throw new ApiError("EMAIL_NOT_VERIFIED", 403, message);
   }
   return user;
 }
