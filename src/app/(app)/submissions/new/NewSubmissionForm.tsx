@@ -13,6 +13,7 @@ interface Props {
   themes: Theme[];
   maxUploadBytes: number;
   weeklyTheme?: { id: string; title: string } | null;
+  groupTheme?: { id: string; title: string } | null;
 }
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
@@ -41,7 +42,7 @@ async function pollTranscription(submissionId: string): Promise<string> {
   return "transcribing";
 }
 
-export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props) {
+export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme, groupTheme }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [themeId, setThemeId] = useState("");
@@ -69,7 +70,7 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
       return;
     }
     const selectedTheme = themes.find((theme) => theme.id === themeId);
-    if (!weeklyTheme && !selectedTheme && !themeText.trim()) {
+    if (!weeklyTheme && !groupTheme && !selectedTheme && !themeText.trim()) {
       setError("Escolha um tema do catálogo ou escreva o tema da proposta.");
       return;
     }
@@ -81,13 +82,14 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          themeId: weeklyTheme ? undefined : selectedTheme?.id,
-          themeText: weeklyTheme?.title ?? selectedTheme?.title ?? themeText.trim(),
+          themeId: weeklyTheme || groupTheme ? undefined : selectedTheme?.id,
+          themeText: weeklyTheme?.title ?? groupTheme?.title ?? selectedTheme?.title ?? themeText.trim(),
           imageSha256,
           contentType: file.type,
           sizeBytes: file.size,
           force,
           ...(weeklyTheme ? { weeklyThemeId: weeklyTheme.id } : {}),
+          ...(groupTheme ? { groupThemeId: groupTheme.id } : {}),
         }),
       });
       if (createResponse.status === 402) {
@@ -161,6 +163,11 @@ export function NewSubmissionForm({ themes, maxUploadBytes, weeklyTheme }: Props
         <div className="banner">
           <strong>Redação da semana</strong>
           <p>{weeklyTheme.title}</p>
+        </div>
+      ) : groupTheme ? (
+        <div className="banner">
+          <strong>Tema do grupo</strong>
+          <p>{groupTheme.title}</p>
         </div>
       ) : (
         <>

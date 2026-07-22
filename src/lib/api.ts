@@ -21,6 +21,11 @@ export type ErrorCode =
   | "ACTIVE_THEME_EXISTS"
   | "ALREADY_CLOSED"
   | "DISPLAY_AS_REQUIRED"
+  | "NOT_GROUP_MEMBER"
+  | "NOT_GROUP_LEADER"
+  | "INVITE_NOT_FOUND"
+  | "GROUP_FULL"
+  | "MEMBER_GROUP_LIMIT"
   | "INTERNAL";
 
 export class ApiError extends Error {

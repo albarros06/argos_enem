@@ -23,6 +23,15 @@ import {
   deleteEntry,
   setDisplayAs,
 } from "@/modules/weekly";
+import {
+  requireGroupMember,
+  getThemeById as getGroupThemeById,
+  getEntryByUserAndTheme as getGroupEntryByUserAndTheme,
+  getEntryBySubmission as getGroupEntryBySubmission,
+  createEntry as createGroupEntry,
+  deleteEntry as deleteGroupEntry,
+  setDisplayAs as setGroupDisplayAs,
+} from "@/modules/groups";
 import { countEssayLines } from "@/lib/text";
 import { assertTransition } from "./stateMachine";
 
@@ -37,11 +46,20 @@ export const createSubmissionSchema = z.object({
   sizeBytes: z.number().int().positive(),
   force: z.boolean().optional(),
   weeklyThemeId: z.string().uuid().optional(),
+  groupThemeId: z.string().uuid().optional(),
 });
 
 export type CreateSubmissionInput = z.infer<typeof createSubmissionSchema>;
 
 export async function createSubmission(userId: string, input: CreateSubmissionInput) {
+  if (input.weeklyThemeId && input.groupThemeId) {
+    throw new ApiError(
+      "VALIDATION_ERROR",
+      400,
+      "Escolha apenas um tipo de tema: da semana ou de um grupo.",
+    );
+  }
+
   // Participação na redação da semana: exclusiva de assinantes premium, tema
   // ativo e uma única submissão por tema (FR-009, FR-010, FR-012). Verificado
   // antes do paywall para que não-premium recebam a mensagem correta.
@@ -68,6 +86,28 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     }
     weeklyThemeId = activeTheme.id;
     weeklyThemeTitle = activeTheme.title;
+  }
+
+  // Participação em tema de grupo: exige apenas ser membro do grupo (líder ou
+  // convidado) — sem restrição de plano, mesma regra de crédito de qualquer
+  // submissão regular (FR-015, FR-016, FR-017).
+  let groupThemeId: string | undefined;
+  let groupThemeTitle: string | undefined;
+  if (input.groupThemeId) {
+    const theme = await getGroupThemeById(input.groupThemeId);
+    if (!theme || theme.status !== "active") {
+      throw new ApiError("THEME_NOT_ACTIVE", 409, "O tema deste grupo não está mais ativo.");
+    }
+    await requireGroupMember(theme.groupId, userId);
+    if (await getGroupEntryByUserAndTheme(theme.id, userId)) {
+      throw new ApiError(
+        "ALREADY_ENTERED",
+        409,
+        "Você já enviou uma redação para o tema deste grupo.",
+      );
+    }
+    groupThemeId = theme.id;
+    groupThemeTitle = theme.title;
   }
 
   // Paywall antes de qualquer processamento de upload (FR-021).
@@ -113,16 +153,19 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     }
     themeText = theme.title;
   }
-  // O tema da redação da semana define o enunciado da submissão.
+  // O tema da redação da semana ou do grupo define o enunciado da submissão.
   if (weeklyThemeTitle) {
     themeText = weeklyThemeTitle;
+  } else if (groupThemeTitle) {
+    themeText = groupThemeTitle;
   }
 
   const id = crypto.randomUUID();
   const imageKey = `essays/${userId}/${id}.${extensionFor(input.contentType)}`;
 
-  // A submissão e o vínculo com o tema da semana são criados juntos para que a
-  // constraint única reserve a vaga já no início do fluxo (FR-012).
+  // A submissão e o vínculo com o tema (semana ou grupo) são criados juntos
+  // para que a constraint única reserve a vaga já no início do fluxo (FR-012,
+  // FR-017).
   await prisma.$transaction(async (tx) => {
     await tx.submission.create({
       data: {
@@ -137,6 +180,9 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     });
     if (weeklyThemeId) {
       await createEntry(weeklyThemeId, userId, id, tx);
+    }
+    if (groupThemeId) {
+      await createGroupEntry(groupThemeId, userId, id, tx);
     }
   });
 
@@ -195,6 +241,7 @@ export async function transcribeSubmission(submissionId: string): Promise<void> 
   if (!outcome.ok) {
     await deleteImage(submission.imageKey);
     await deleteEntry(submission.id);
+    await deleteGroupEntry(submission.id);
     await prisma.submission.update({
       where: { id: submission.id },
       data: { status: "failed", failureReason: outcome.reason, imageKey: null },
@@ -220,6 +267,7 @@ export async function confirmTranscription(
   submissionId: string,
   confirmedText: string,
   weeklyDisplayAs?: "real" | "anonymous",
+  groupDisplayAs?: "real" | "anonymous",
 ) {
   const submission = await ownedSubmission(userId, submissionId);
   assertTransition(submission.status, "grading");
@@ -229,14 +277,22 @@ export async function confirmTranscription(
   const rawText = transcription?.rawText ?? "";
   validateConfirmedText(rawText, confirmedText);
 
-  // Submissão vinculada ao tema da semana exige a escolha de exibição no
-  // ranking (nome ou anônimo) na confirmação (FR-013).
+  // Submissão vinculada a um tema (semana ou grupo) exige a escolha de
+  // exibição no ranking (nome ou anônimo) na confirmação (FR-013, FR-018).
   const weeklyEntry = await getEntryBySubmission(submission.id);
   if (weeklyEntry && !weeklyDisplayAs) {
     throw new ApiError(
       "DISPLAY_AS_REQUIRED",
       400,
       "Escolha como deseja aparecer no ranking: com seu nome ou de forma anônima.",
+    );
+  }
+  const groupEntry = await getGroupEntryBySubmission(submission.id);
+  if (groupEntry && !groupDisplayAs) {
+    throw new ApiError(
+      "DISPLAY_AS_REQUIRED",
+      400,
+      "Escolha como deseja aparecer no ranking do grupo: com seu nome ou de forma anônima.",
     );
   }
 
@@ -282,6 +338,9 @@ export async function confirmTranscription(
   if (weeklyEntry && weeklyDisplayAs) {
     await setDisplayAs(submission.id, weeklyDisplayAs);
   }
+  if (groupEntry && groupDisplayAs) {
+    await setGroupDisplayAs(submission.id, groupDisplayAs);
+  }
 
   startGrading(submission.id);
   return prisma.submission.findUniqueOrThrow({ where: { id: submission.id } });
@@ -293,8 +352,9 @@ export async function abandonSubmission(userId: string, submissionId: string) {
   if (submission.imageKey) {
     await deleteImage(submission.imageKey);
   }
-  // Abandono libera a vaga no tema da semana (FR-012).
+  // Abandono libera a vaga no tema da semana ou do grupo (FR-012, FR-017).
   await deleteEntry(submission.id);
+  await deleteGroupEntry(submission.id);
   return prisma.submission.update({
     where: { id: submission.id },
     data: { status: "expired", imageKey: null },
@@ -308,6 +368,7 @@ export async function getSubmissionView(userId: string, submissionId: string) {
       transcription: true,
       evaluation: { include: { annotations: true } },
       weeklyEntry: { include: { theme: { select: { title: true } } } },
+      groupEntry: { include: { theme: { select: { title: true, groupId: true } } } },
     },
   });
   if (!submission || submission.userId !== userId) {
@@ -329,6 +390,13 @@ export async function getSubmissionView(userId: string, submissionId: string) {
     createdAt: submission.createdAt,
     weekly: submission.weeklyEntry
       ? { themeTitle: submission.weeklyEntry.theme.title, displayAs: submission.weeklyEntry.displayAs }
+      : null,
+    group: submission.groupEntry
+      ? {
+          groupId: submission.groupEntry.theme.groupId,
+          themeTitle: submission.groupEntry.theme.title,
+          displayAs: submission.groupEntry.displayAs,
+        }
       : null,
     transcription: submission.transcription
       ? {

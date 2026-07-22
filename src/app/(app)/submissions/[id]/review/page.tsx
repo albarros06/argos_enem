@@ -7,6 +7,7 @@ interface SubmissionView {
   status: string;
   transcription?: { rawText: string; meanConfidence: number };
   weekly?: { themeTitle: string; displayAs: "real" | "anonymous" } | null;
+  group?: { groupId: string; themeTitle: string; displayAs: "real" | "anonymous" } | null;
 }
 
 // Revisão da transcrição: o aluno corrige erros de OCR antes de confirmar.
@@ -20,6 +21,7 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
   const [loaded, setLoaded] = useState(false);
   const [working, setWorking] = useState(false);
   const [weekly, setWeekly] = useState<{ themeTitle: string } | null>(null);
+  const [group, setGroup] = useState<{ themeTitle: string } | null>(null);
   const [displayAs, setDisplayAs] = useState<"real" | "anonymous">("real");
 
   useEffect(() => {
@@ -39,6 +41,10 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
           setWeekly({ themeTitle: submission.weekly.themeTitle });
           setDisplayAs(submission.weekly.displayAs);
         }
+        if (submission.group) {
+          setGroup({ themeTitle: submission.group.themeTitle });
+          setDisplayAs(submission.group.displayAs);
+        }
         setLoaded(true);
       })
       .catch((loadError) => setError(loadError.message));
@@ -53,6 +59,7 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
       body: JSON.stringify({
         confirmedText: text,
         ...(weekly ? { weeklyDisplayAs: displayAs } : {}),
+        ...(group ? { groupDisplayAs: displayAs } : {}),
       }),
     });
     if (response.ok) {
@@ -106,10 +113,14 @@ export default function ReviewPage({ params }: { params: Promise<{ id: string }>
         rows={18}
         aria-label="Texto extraído da redação"
       />
-      {weekly && (
+      {(weekly || group) && (
         <fieldset>
-          <legend>Redação da semana: {weekly.themeTitle}</legend>
-          <p className="muted">Como você quer aparecer no ranking público?</p>
+          <legend>
+            {weekly ? `Redação da semana: ${weekly.themeTitle}` : `Tema do grupo: ${group!.themeTitle}`}
+          </legend>
+          <p className="muted">
+            Como você quer aparecer no ranking {weekly ? "público" : "do grupo"}?
+          </p>
           <label>
             <input
               type="radio"
