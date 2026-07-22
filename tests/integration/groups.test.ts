@@ -104,6 +104,40 @@ describe("groups API — creation, invite, join", () => {
     expect(response.status).toBe(404);
     expect((await response.json()).error.code).toBe("INVITE_NOT_FOUND");
   });
+
+  it("only the leader sees the invite code in the group detail view", async () => {
+    const leader = await createUser();
+    actAs(leader.id);
+    const group = await (
+      await createGroupRoute(
+        jsonRequest("/api/groups", "POST", { name: "Turma A" }),
+        routeContext({}),
+      )
+    ).json();
+
+    const member = await createUser();
+    actAs(member.id);
+    await joinGroupRoute(
+      jsonRequest("/api/groups/join", "POST", { inviteCode: group.inviteCode }),
+      routeContext({}),
+    );
+    const asMember = await (
+      await getGroupRoute(
+        jsonRequest(`/api/groups/${group.id}`, "GET"),
+        routeContext({ id: group.id }),
+      )
+    ).json();
+    expect(asMember.group.inviteCode).toBeNull();
+
+    actAs(leader.id);
+    const asLeader = await (
+      await getGroupRoute(
+        jsonRequest(`/api/groups/${group.id}`, "GET"),
+        routeContext({ id: group.id }),
+      )
+    ).json();
+    expect(asLeader.group.inviteCode).toBe(group.inviteCode);
+  });
 });
 
 describe("groups API — theme proposal and support content", () => {
