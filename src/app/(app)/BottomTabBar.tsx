@@ -8,9 +8,7 @@ const TABS = [
   { href: "/dashboard", label: "Painel" },
   { href: "/submissions", label: "Redações" },
   { href: "/redacoes-semana", label: "Semana" },
-  // 4th slot reserved for the upcoming student-groups feature (specs/009-student-groups).
-  // "Financeiro" was removed here because it duplicated "Assinatura" in NavOverflowMenu
-  // (both pointed to /billing/manage) — billing stays reachable via the overflow menu.
+  { href: "/groups", label: "Grupos" },
 ];
 
 export function BottomTabBar() {

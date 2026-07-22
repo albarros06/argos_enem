@@ -33,6 +33,9 @@ model User {
   authTokens         AuthToken[]
   publishedThemes    WeeklyTheme[]
   weeklyEntries      WeeklyThemeEntry[]
+  ledGroups          Group[]
+  groupMemberships   GroupMember[]
+  groupThemeEntries  GroupThemeEntry[]
 }
 
 enum AuthTokenKind {
@@ -90,6 +93,7 @@ model Submission {
   evaluation    Evaluation?
   credits       CreditTransaction[]
   weeklyEntry   WeeklyThemeEntry?
+  groupEntry    GroupThemeEntry?
 
   @@index([userId, createdAt])
   @@index([userId, imageSha256])
@@ -333,6 +337,104 @@ model WeeklyThemeEntry {
   theme      WeeklyTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   submission Submission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([themeId, userId])
+  @@index([themeId])
+  @@index([userId])
+}
+
+model Group {
+  id         String   @id @default(uuid())
+  name       String
+  leaderId   String?
+  inviteCode String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  leader  User?         @relation(fields: [leaderId], references: [id], onDelete: SetNull)
+  members GroupMember[]
+  themes  GroupTheme[]
+
+  @@index([leaderId])
+}
+
+model GroupMember {
+  id       String   @id @default(uuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+}
+
+enum GroupThemeStatus {
+  active
+  closed
+}
+
+model GroupTheme {
+  id          String           @id @default(uuid())
+  groupId     String
+  title       String
+  status      GroupThemeStatus @default(active)
+  publishedAt DateTime         @default(now())
+  closedAt    DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  group    Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  contents GroupThemeContent[]
+  entries  GroupThemeEntry[]
+
+  @@index([groupId, status])
+}
+
+enum GroupContentKind {
+  text
+  file
+}
+
+enum GroupFileKind {
+  image
+  pdf
+}
+
+model GroupThemeContent {
+  id           String            @id @default(uuid())
+  themeId      String
+  kind         GroupContentKind
+  body         String?
+  fileKey      String?
+  fileType     GroupFileKind?
+  displayOrder Int               @default(0)
+  createdAt    DateTime          @default(now())
+
+  theme GroupTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@index([themeId])
+}
+
+enum GroupDisplayAs {
+  real
+  anonymous
+}
+
+model GroupThemeEntry {
+  id           String         @id @default(uuid())
+  themeId      String
+  userId       String
+  submissionId String         @unique
+  displayAs    GroupDisplayAs @default(anonymous)
+  finalRank    Int?
+  createdAt    DateTime       @default(now())
+
+  theme      GroupTheme @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@unique([themeId, userId])
   @@index([themeId])

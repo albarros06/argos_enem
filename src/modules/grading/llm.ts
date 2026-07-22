@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { business, env, fakeVendorsEnabled } from "@/lib/config";
 import { logger } from "@/lib/logger";
+import { isRateLimitError, withRetry } from "@/lib/retry";
 import { vertexClient } from "@/lib/vertex";
 import { buildGradingUserMessage, RUBRIC_SYSTEM_PROMPT } from "./rubric";
 import { llmEvaluationSchema, type LlmEvaluation } from "./schema";
@@ -24,24 +25,28 @@ class AnthropicGradingProvider implements GradingProvider {
 
   async grade(input: GradingInput): Promise<LlmEvaluation> {
     const response = await logger.vendorCall("anthropic", "grade_essay", () =>
-      this.client.messages.parse({
-        model: business.gradingModelId,
-        max_tokens: business.gradingMaxOutputTokens,
-        system: [
-          {
-            type: "text",
-            text: RUBRIC_SYSTEM_PROMPT,
-            // Rubrica congelada: cache de prompt corta ~90% do custo de input (R3).
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        messages: [
-          { role: "user", content: buildGradingUserMessage(input.theme, input.essayText) },
-        ],
-        output_config: {
-          format: zodOutputFormat(llmEvaluationSchema),
-        },
-      }),
+      withRetry(
+        () =>
+          this.client.messages.parse({
+            model: business.gradingModelId,
+            max_tokens: business.gradingMaxOutputTokens,
+            system: [
+              {
+                type: "text",
+                text: RUBRIC_SYSTEM_PROMPT,
+                // Rubrica congelada: cache de prompt corta ~90% do custo de input (R3).
+                cache_control: { type: "ephemeral" },
+              },
+            ],
+            messages: [
+              { role: "user", content: buildGradingUserMessage(input.theme, input.essayText) },
+            ],
+            output_config: {
+              format: zodOutputFormat(llmEvaluationSchema),
+            },
+          }),
+        { isRetryable: isRateLimitError },
+      ),
     );
     if (!response.parsed_output) {
       throw new Error(`Saída do modelo não parseável (stop_reason: ${response.stop_reason})`);

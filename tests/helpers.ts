@@ -17,7 +17,8 @@ export async function resetDb(): Promise<void> {
     `TRUNCATE TABLE "User", "AuthToken", "Submission", "Transcription", "Evaluation",
      "Annotation", "CreditTransaction", "SubscriptionPlan", "Subscription",
      "PaymentTransaction", "EssayTheme", "WebhookEvent", "WeeklyTheme",
-     "WeeklyThemeContent", "WeeklyThemeEntry" CASCADE`,
+     "WeeklyThemeContent", "WeeklyThemeEntry", "Group", "GroupMember", "GroupTheme",
+     "GroupThemeContent", "GroupThemeEntry" CASCADE`,
   );
   fakeGlobals.fakeGradingQueue = [];
   fakeGlobals.fakeTranscriptionQueue = [];
@@ -71,7 +72,12 @@ export async function createCompletedWeeklyEntry(params: {
       imageSha256: Math.random().toString(16).slice(2).padEnd(64, "0"),
       status: "completed",
       transcription: {
-        create: { rawText: "texto", confirmedText: "texto", meanConfidence: 0.9, confirmedAt: params.confirmedAt },
+        create: {
+          rawText: "texto",
+          confirmedText: "texto",
+          meanConfidence: 0.9,
+          confirmedAt: params.confirmedAt,
+        },
       },
       evaluation: {
         create: {
@@ -90,6 +96,63 @@ export async function createCompletedWeeklyEntry(params: {
     },
   });
   await prisma.weeklyThemeEntry.create({
+    data: {
+      themeId: params.themeId,
+      userId: params.userId,
+      submissionId: submission.id,
+      displayAs: params.displayAs ?? "real",
+    },
+  });
+  return submission;
+}
+
+// Cria uma submissão já avaliada vinculada a um tema de grupo — base para os
+// testes de ranking de grupo.
+export async function createCompletedGroupEntry(params: {
+  themeId: string;
+  userId: string;
+  totalScore: number;
+  confirmedAt: Date;
+  displayAs?: "real" | "anonymous";
+}) {
+  const scores = [
+    params.totalScore / 5,
+    params.totalScore / 5,
+    params.totalScore / 5,
+    params.totalScore / 5,
+    params.totalScore / 5,
+  ];
+  const submission = await prisma.submission.create({
+    data: {
+      userId: params.userId,
+      themeText: "Tema do grupo",
+      imageSha256: Math.random().toString(16).slice(2).padEnd(64, "0"),
+      status: "completed",
+      transcription: {
+        create: {
+          rawText: "texto",
+          confirmedText: "texto",
+          meanConfidence: 0.9,
+          confirmedAt: params.confirmedAt,
+        },
+      },
+      evaluation: {
+        create: {
+          scoreC1: scores[0],
+          scoreC2: scores[1],
+          scoreC3: scores[2],
+          scoreC4: scores[3],
+          scoreC5: scores[4],
+          totalScore: params.totalScore,
+          justifications: {},
+          generalFeedback: "ok",
+          rubricVersion: "test",
+          modelId: "test",
+        },
+      },
+    },
+  });
+  await prisma.groupThemeEntry.create({
     data: {
       themeId: params.themeId,
       userId: params.userId,
