@@ -109,28 +109,30 @@ class GeminiGradingProvider implements GradingProvider {
 
   async grade(input: GradingInput): Promise<LlmEvaluation> {
     const response = await logger.vendorCall("gemini", "grade_essay", () =>
-      this.client.models
-        .generateContent({
-          model: business.gradingModelId,
-          contents: buildGradingUserMessage(input.theme, input.essayText),
-          config: {
-            // Rubrica congelada como instrução de sistema: o cache implícito do
-            // Gemini reaproveita esse prefixo estável entre chamadas (R3).
-            systemInstruction: RUBRIC_SYSTEM_PROMPT,
-            responseMimeType: "application/json",
-            responseJsonSchema: GEMINI_EVALUATION_SCHEMA,
-            temperature: 0, // correção reprodutível
-            maxOutputTokens: business.gradingMaxOutputTokens,
-          },
-        })
-        .catch((error: unknown) => {
-          // Contexto de modelo/região ajuda a diagnosticar indisponibilidade do
-          // modelo na região configurada (FR-012) e falhas de permissão.
-          const detail = error instanceof Error ? error.message : String(error);
-          throw new Error(
-            `Falha ao chamar o Vertex AI (modelo: ${business.gradingModelId}, região: ${this.location}): ${detail}`,
-          );
-        }),
+      withRetry(
+        () =>
+          this.client.models.generateContent({
+            model: business.gradingModelId,
+            contents: buildGradingUserMessage(input.theme, input.essayText),
+            config: {
+              // Rubrica congelada como instrução de sistema: o cache implícito do
+              // Gemini reaproveita esse prefixo estável entre chamadas (R3).
+              systemInstruction: RUBRIC_SYSTEM_PROMPT,
+              responseMimeType: "application/json",
+              responseJsonSchema: GEMINI_EVALUATION_SCHEMA,
+              temperature: 0, // correção reprodutível
+              maxOutputTokens: business.gradingMaxOutputTokens,
+            },
+          }),
+        { isRetryable: isRateLimitError },
+      ).catch((error: unknown) => {
+        // Contexto de modelo/região ajuda a diagnosticar indisponibilidade do
+        // modelo na região configurada (FR-012) e falhas de permissão.
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `Falha ao chamar o Vertex AI (modelo: ${business.gradingModelId}, região: ${this.location}): ${detail}`,
+        );
+      }),
     );
 
     const text = response.text;

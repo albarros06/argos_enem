@@ -1,8 +1,9 @@
 import { ImageAnnotatorClient, protos } from "@google-cloud/vision";
 import { ThinkingLevel } from "@google/genai";
 import { business, env, fakeVendorsEnabled } from "@/lib/config";
-import { vertexClient } from "@/lib/vertex";
 import { logger } from "@/lib/logger";
+import { isRateLimitError, withRetry } from "@/lib/retry";
+import { vertexClient } from "@/lib/vertex";
 
 type FullTextAnnotation = protos.google.cloud.vision.v1.ITextAnnotation;
 
@@ -109,27 +110,31 @@ class GeminiImageTranscriptionProvider implements ImageTranscriptionProvider {
   private client = vertexClient();
 
   async extract(image: Buffer, mimeType: string): Promise<TranscriptionResult> {
-    const response = await this.client.models.generateContent({
-      model: business.imageOcrModelId,
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { inlineData: { mimeType, data: image.toString("base64") } },
-            { text: TRANSCRIPTION_PROMPT },
+    const response = await withRetry(
+      () =>
+        this.client.models.generateContent({
+          model: business.imageOcrModelId,
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { inlineData: { mimeType, data: image.toString("base64") } },
+                { text: TRANSCRIPTION_PROMPT },
+              ],
+            },
           ],
-        },
-      ],
-      config: {
-        temperature: 0, // transcrição reprodutível
-        responseMimeType: "text/plain",
-        maxOutputTokens: business.imageOcrMaxOutputTokens,
-        // Transcrição é cópia verbatim — não precisa de raciocínio. Sem isso, o
-        // "thinking" do Gemini 3 consome quase todo o maxOutputTokens e trunca o
-        // texto (finishReason MAX_TOKENS). LOW deixa o orçamento para o texto.
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      },
-    });
+          config: {
+            temperature: 0, // transcrição reprodutível
+            responseMimeType: "text/plain",
+            maxOutputTokens: business.imageOcrMaxOutputTokens,
+            // Transcrição é cópia verbatim — não precisa de raciocínio. Sem isso, o
+            // "thinking" do Gemini 3 consome quase todo o maxOutputTokens e trunca o
+            // texto (finishReason MAX_TOKENS). LOW deixa o orçamento para o texto.
+            thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          },
+        }),
+      { isRetryable: isRateLimitError },
+    );
     // Visibilidade do custo/truncamento: finishReason e quanto foi pensamento vs texto.
     const usage = response.usageMetadata;
     logger.info("image_ocr_usage", {
