@@ -1,10 +1,12 @@
-/* Mobile-first: base rules target mobile, min-width:768px layers up to
-   desktop. On mobile, the nav collapses to brand + the persistent credit
-   indicator (FR-020) + theme toggle + an overflow menu (Admin/Assinatura/
-   Sair) — navigation moves to the fixed BottomTabBar, and "Nova redação"
-   moves to a floating action button. Anything wrapped in .desktopOnly is
-   the unchanged original desktop nav, just hidden below 768px in favor of
-   its mobile equivalent (BottomTabBar / NavOverflowMenu / the FAB). */
+/* Mobile-first: base rules target mobile, min-width:1140px layers up to
+   desktop. On mobile (and on the tablet/small-laptop range up to 1140px,
+   which can't fit the full nav row on one line), the nav collapses to
+   brand + the persistent credit indicator (FR-020) + theme toggle + an
+   overflow menu (Admin/Assinatura/Sair) — navigation moves to the fixed
+   BottomTabBar, and "Nova redação" moves to a floating action button.
+   Anything wrapped in .desktopOnly is the unchanged original desktop nav,
+   just hidden below 1140px in favor of its mobile equivalent (BottomTabBar
+   / NavOverflowMenu / the FAB). */
 .nav {
   position: sticky;
   top: 0;
@@ -88,7 +90,7 @@
   width: 100%;
 }
 
-/* ---- Bottom tab bar (mobile only — hidden from 768px up) ---- */
+/* ---- Bottom tab bar (mobile/tablet only — hidden from 1140px up) ---- */
 .bottomTabBar {
   position: fixed;
   left: 0;
@@ -220,7 +222,7 @@
     var(--shadow-lg);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1140px) {
   .nav {
     padding: var(--space-md) var(--space-lg);
   }
