@@ -9,7 +9,7 @@ export const GET = handleRoute<{ id: string }>(async (_request, context) => {
   const user = await requireUser();
   const { id } = await context.params;
   await requireGroupMember(id, user.id);
-  return NextResponse.json(await getGroupDetailView(id));
+  return NextResponse.json(await getGroupDetailView(id, user.id));
 });
 
 export const DELETE = handleRoute<{ id: string }>(async (_request, context) => {

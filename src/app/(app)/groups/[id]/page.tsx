@@ -27,7 +27,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
     throw error;
   }
 
-  const view = await getGroupDetailView(id);
+  const view = await getGroupDetailView(id, user.id);
   const isLeader = view.group.leaderId === user.id;
   const myEntry = view.activeTheme
     ? await getEntryByUserAndTheme(view.activeTheme.id, user.id)

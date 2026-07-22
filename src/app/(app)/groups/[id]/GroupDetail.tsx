@@ -39,7 +39,7 @@ interface GroupView {
     name: string;
     leaderId: string | null;
     leaderName: string | null;
-    inviteCode: string;
+    inviteCode: string | null;
     memberCount: number;
   };
   members: Member[];
@@ -75,7 +75,7 @@ export function GroupDetail({
   const [copied, setCopied] = useState(false);
 
   const inviteLink =
-    typeof window !== "undefined"
+    typeof window !== "undefined" && view.group.inviteCode
       ? `${window.location.origin}/groups/join/${view.group.inviteCode}`
       : "";
 
@@ -178,28 +178,28 @@ export function GroupDetail({
       <h1>{view.group.name}</h1>
       {error && <p className="error">{error}</p>}
 
-      <section className="banner">
-        <h2>Convite</h2>
-        <p className="muted">Compartilhe o link ou o código para novos membros entrarem.</p>
-        <p>
-          <code>{view.group.inviteCode}</code>
-        </p>
-        {inviteLink && (
+      {isLeader && view.group.inviteCode && (
+        <section className="banner">
+          <h2>Convite</h2>
+          <p className="muted">Compartilhe o link ou o código para novos membros entrarem.</p>
           <p>
-            <button
-              type="button"
-              className="button secondary"
-              onClick={() => {
-                void navigator.clipboard.writeText(inviteLink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-            >
-              {copied ? "Link copiado!" : "Copiar link de convite"}
-            </button>
+            <code>{view.group.inviteCode}</code>
           </p>
-        )}
-        {isLeader && (
+          {inviteLink && (
+            <p>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => {
+                  void navigator.clipboard.writeText(inviteLink);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? "Link copiado!" : "Copiar link de convite"}
+              </button>
+            </p>
+          )}
           <p>
             <button
               type="button"
@@ -214,8 +214,8 @@ export function GroupDetail({
               Gerar novo convite
             </button>
           </p>
-        )}
-      </section>
+        </section>
+      )}
 
       <section>
         <h2>Membros ({view.group.memberCount})</h2>
@@ -381,24 +381,44 @@ export function GroupDetail({
         {view.ranking.length === 0 ? (
           <p className="muted">Ainda não há redações corrigidas neste grupo.</p>
         ) : (
-          <table className="table-responsive">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Participante</th>
-                <th>Nota</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.ranking.map((row) => (
-                <tr key={row.rank}>
-                  <td>{row.rank}</td>
-                  <td>{row.displayName}</td>
-                  <td>{row.totalScore}</td>
+          <>
+            <table className="table-responsive">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Participante</th>
+                  <th>Nota</th>
                 </tr>
+              </thead>
+              <tbody>
+                {view.ranking.map((row) => (
+                  <tr key={row.rank}>
+                    <td>{row.rank}</td>
+                    <td>{row.displayName}</td>
+                    <td>{row.totalScore}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="table-cards">
+              {view.ranking.map((row) => (
+                <div key={row.rank} className="table-card">
+                  <div className="table-card-row">
+                    <span className="table-card-label">#</span>
+                    <span>{row.rank}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-label">Participante</span>
+                    <span>{row.displayName}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-label">Nota</span>
+                    <span>{row.totalScore}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </section>
 

@@ -106,8 +106,8 @@ actions are marked below and return 403 `NOT_GROUP_LEADER` for non-leaders.
 }
 ```
 
-`inviteCode` and `leaderId`/`leaderName` are included for all members (any member can see
-who leads the group and share the code, but only the leader can regenerate it).
+`inviteCode` is `null` when the caller isn't the leader — only the leader can see or share the
+invite code/link (or regenerate it). `leaderId`/`leaderName` are visible to every member.
 `activeTheme` is `null` when no theme is active — in that case `ranking` reflects the most
 recently closed theme (empty array if none). `displayName` follows the same convention as
 the global ranking: real name when `displayAs = real`, `"Participante anônimo"` otherwise.
