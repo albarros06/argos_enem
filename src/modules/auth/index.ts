@@ -9,13 +9,24 @@ import { logger } from "@/lib/logger";
 import { grantSignupCredits } from "@/modules/credits";
 import { consumeToken, issueToken } from "./tokens";
 
+// Política de senha (SEC-007): mínimo de 10 caracteres e rejeição de padrões
+// triviais (apenas dígitos ou um único caractere repetido). Aplicada só no
+// cadastro e na redefinição — não no login — para não travar usuários
+// existentes com senhas antigas. A senha fraca "senha123" (8 chars) é barrada
+// pelo comprimento mínimo.
+export const passwordSchema = z
+  .string()
+  .min(10, "A senha deve ter pelo menos 10 caracteres.")
+  .refine(
+    (value) => !/^\d+$/.test(value) && !/^(.)\1+$/.test(value),
+    "Escolha uma senha mais forte (evite apenas números ou caracteres repetidos).",
+  );
+
 export const registerSchema = z.object({
   name: z.string().trim().min(1, "Informe seu nome.").max(120),
   email: z.string().trim().toLowerCase().email("E-mail inválido."),
-  password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres."),
+  password: passwordSchema,
 });
-
-export const passwordSchema = z.string().min(8, "A senha deve ter pelo menos 8 caracteres.");
 
 export async function registerUser(input: z.infer<typeof registerSchema>) {
   const { name, email, password } = registerSchema.parse(input);

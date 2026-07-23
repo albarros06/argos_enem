@@ -440,3 +440,16 @@ model GroupThemeEntry {
   @@index([themeId])
   @@index([userId])
 }
+
+// Janela deslizante de rate limiting compartilhada entre instâncias serverless
+// (feature 016 / SEC-004). Cada linha é uma tentativa; a contagem por `key`
+// dentro da janela decide o bloqueio. Substitui o Map em memória, que não
+// sobrevivia ao modelo distribuído/efêmero da Vercel. Linhas expiradas são
+// removidas oportunisticamente a cada verificação e pela varredura do cron.
+model RateLimitHit {
+  id        String   @id @default(uuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
