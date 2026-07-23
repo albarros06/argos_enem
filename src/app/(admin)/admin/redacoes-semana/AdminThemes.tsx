@@ -188,9 +188,11 @@ export function AdminThemes({ themes, active }: { themes: ThemeRow[]; active: Ac
             <ul>
               {active.contents.map((content) => (
                 <li key={content.id}>
-                  {content.kind === "text"
-                    ? `Texto: ${content.body?.slice(0, 80)}…`
-                    : `Arquivo (${content.fileType})`}{" "}
+                  {content.kind === "text" ? (
+                    <span style={{ whiteSpace: "pre-wrap" }}>{content.body}</span>
+                  ) : (
+                    `Arquivo (${content.fileType})`
+                  )}{" "}
                   <button
                     className="button secondary"
                     disabled={working}
