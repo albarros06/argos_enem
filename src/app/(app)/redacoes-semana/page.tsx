@@ -38,7 +38,9 @@ export default async function WeeklyThemePage() {
           <h3>Textos de apoio</h3>
           {view.theme.contents.map((content) =>
             content.kind === "text" ? (
-              <p key={content.id}>{content.body}</p>
+              <p key={content.id} style={{ whiteSpace: "pre-wrap" }}>
+                {content.body}
+              </p>
             ) : content.fileType === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

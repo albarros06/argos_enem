@@ -184,6 +184,47 @@ describe("groups API — theme proposal and support content", () => {
     expect(closedTheme.status).toBe("closed");
     expect(closedTheme.closedAt).toBeTruthy();
   });
+
+  it("returns support text in full, without truncation", async () => {
+    const leader = await createUser();
+    actAs(leader.id);
+    const group = await (
+      await createGroupRoute(
+        jsonRequest("/api/groups", "POST", { name: "Turma A" }),
+        routeContext({}),
+      )
+    ).json();
+    const theme = await proposeTheme(group.id, leader.id, "Tema do grupo");
+
+    // Longer than the old 80-char preview and multi-line, so a re-introduced
+    // slice(0, 80) or a stripped newline would fail this assertion.
+    const longBody = [
+      "Primeiro parágrafo do texto de apoio, com mais de oitenta caracteres para que a exibição não corte o conteúdo em uma prévia.",
+      "Segundo parágrafo, em nova linha, cuja quebra deve ser preservada.",
+    ].join("\n");
+
+    const added = await addContentRoute(
+      jsonRequest(`/api/groups/${group.id}/themes/${theme.id}/contents`, "POST", {
+        kind: "text",
+        body: longBody,
+        displayOrder: 0,
+      }),
+      routeContext({ id: group.id, themeId: theme.id }),
+    );
+    expect(added.status).toBe(201);
+
+    const detail = await (
+      await getGroupRoute(
+        jsonRequest(`/api/groups/${group.id}`, "GET"),
+        routeContext({ id: group.id }),
+      )
+    ).json();
+    const textContent = detail.activeTheme.contents.find(
+      (c: { kind: string }) => c.kind === "text",
+    );
+    expect(textContent.body).toBe(longBody);
+    expect(textContent.body.length).toBeGreaterThan(80);
+  });
 });
 
 describe("groups API — member submission and ranking", () => {

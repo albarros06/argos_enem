@@ -256,7 +256,7 @@ export function GroupDetail({
                   {view.activeTheme.contents.map((content) => (
                     <li key={content.id}>
                       {content.kind === "text" ? (
-                        `Texto: ${content.body?.slice(0, 80)}…`
+                        <span style={{ whiteSpace: "pre-wrap" }}>{content.body}</span>
                       ) : content.fileType === "image" ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
