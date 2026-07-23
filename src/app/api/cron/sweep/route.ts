@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/config";
 import { errorResponse, handleRoute } from "@/lib/api";
 import { logger } from "@/lib/logger";
+import { sweepRateLimitHits } from "@/lib/rateLimit";
 import { sweepBillingCycles } from "@/modules/billing";
 import { sweepAbandonedSubmissions } from "@/modules/submissions";
 import { closeExpiredThemes } from "@/modules/weekly";
@@ -26,17 +27,19 @@ async function runSweeps(request: Request): Promise<Response> {
     return errorResponse("UNAUTHENTICATED", 401, "Cron não autorizado.");
   }
 
-  // As três varreduras são independentes — uma falha não deve impedir as outras.
-  const [billing, submissions, themes] = await Promise.allSettled([
+  // As varreduras são independentes — uma falha não deve impedir as outras.
+  const [billing, submissions, themes, rateLimit] = await Promise.allSettled([
     sweepBillingCycles(),
     sweepAbandonedSubmissions(),
     closeExpiredThemes(),
+    sweepRateLimitHits(),
   ]);
 
   for (const [name, result] of [
     ["billing", billing],
     ["submissions", submissions],
     ["themes", themes],
+    ["rateLimit", rateLimit],
   ] as const) {
     if (result.status === "rejected") {
       logger.error("cron_sweep_failed", {
@@ -46,13 +49,14 @@ async function runSweeps(request: Request): Promise<Response> {
     }
   }
 
-  const ok = [billing, submissions, themes].every((r) => r.status === "fulfilled");
+  const ok = [billing, submissions, themes, rateLimit].every((r) => r.status === "fulfilled");
   return NextResponse.json(
     {
       ok,
       billing: billing.status,
       submissions: submissions.status,
       themes: themes.status,
+      rateLimit: rateLimit.status,
     },
     { status: ok ? 200 : 500 },
   );

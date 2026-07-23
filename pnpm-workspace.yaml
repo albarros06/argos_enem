@@ -1,3 +1,13 @@
+# Security fixes (feature 016): force patched transitive deps that parents pin below
+# the advisory fix. postcss (build-time, GHSA arbitrary file read / XSS, patched
+# >=8.5.12) and protobufjs (Vision OCR runtime, DoS, patched >=7.6.5) are safe
+# within-major bumps. sharp is intentionally NOT overridden: Next 15.5.21 pins
+# sharp@^0.34.3, which excludes the patched >=0.35.0 — forcing it would break Next's
+# image optimizer, so it stays a documented residual until Next bumps sharp.
+overrides:
+  postcss@<8.5.12: ">=8.5.12"
+  protobufjs@<7.6.5: ">=7.6.5"
+
 allowBuilds:
   "@prisma/client": true
   "@prisma/engines": true
