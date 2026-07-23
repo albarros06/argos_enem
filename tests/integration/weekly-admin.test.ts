@@ -16,6 +16,8 @@ vi.mock("next-auth/providers/credentials", () => ({ default: (config: unknown) =
 
 import { GET as listRoute, POST as createRoute } from "@/app/api/admin/weekly-themes/route";
 import { PATCH as patchRoute } from "@/app/api/admin/weekly-themes/[id]/route";
+import { POST as addContentRoute } from "@/app/api/admin/weekly-themes/[id]/contents/route";
+import { getActiveThemeView } from "@/modules/weekly/views";
 
 async function createTheme(title = "Tema da semana") {
   const response = await createRoute(
@@ -75,5 +77,33 @@ describe("admin weekly themes API", () => {
       routeContext({ id: theme.id }),
     );
     expect(closeAgain.status).toBe(409);
+  });
+
+  it("exposes support text in full to the active-theme view, without truncation", async () => {
+    const admin = await createAdmin();
+    actAs(admin.id);
+    const theme = await (await createTheme()).json();
+
+    // Longer than the old 80-char preview and multi-line, so a re-introduced
+    // slice(0, 80) or a stripped newline would fail this assertion.
+    const longBody = [
+      "Primeiro parágrafo do texto de apoio, com mais de oitenta caracteres para que a exibição não corte o conteúdo em uma prévia.",
+      "Segundo parágrafo, em nova linha, cuja quebra deve ser preservada.",
+    ].join("\n");
+
+    const added = await addContentRoute(
+      jsonRequest(`/api/admin/weekly-themes/${theme.id}/contents`, "POST", {
+        kind: "text",
+        body: longBody,
+        displayOrder: 0,
+      }),
+      routeContext({ id: theme.id }),
+    );
+    expect(added.status).toBe(201);
+
+    const view = await getActiveThemeView();
+    const textContent = view!.theme.contents.find((c) => c.kind === "text");
+    expect(textContent!.body).toBe(longBody);
+    expect(textContent!.body!.length).toBeGreaterThan(80);
   });
 });
