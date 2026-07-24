@@ -1,0 +1,36 @@
+/* Design System: Logo Styles */
+
+.tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+}
+
+/* Option 1 — Classic Almond: solid brand-blue tile, light eye. */
+.variant-solid {
+  background: var(--color-primary-brand);
+}
+
+.variant-solid .eyeBody {
+  fill: var(--color-surface-bg);
+}
+
+/* Option 1c — Almond, Soft Tile: tinted tile, brand-blue eye. */
+.variant-soft {
+  background: var(--color-primary-soft);
+}
+
+.variant-soft .eyeBody {
+  fill: var(--color-primary-brand);
+}
+
+/* Shared eye internals. */
+.iris {
+  fill: var(--color-primary-strong);
+}
+
+.pupil {
+  fill: var(--color-text-on-brand);
+}

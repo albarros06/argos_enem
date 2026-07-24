@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
+import Logo from "@/components/Logo/Logo";
 import styles from "./auth.module.css";
 
 // Shell comum das páginas de autenticação: o container centralizado e o toggle
@@ -14,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className={styles.glow} aria-hidden="true" />
         <div className={styles.stack}>
           <Link href="/" className={styles.brand}>
-            <span className={styles.brandMark} aria-hidden="true" />
+            <Logo size={30} />
             Argos
           </Link>
           {children}

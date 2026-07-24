@@ -21,14 +21,6 @@
   color: var(--color-text-primary);
 }
 
-.brandMark {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--gradient-brand);
-  box-shadow: inset 0 0 0 5px var(--color-surface-bg);
-}
-
 .container {
   position: relative;
   min-height: 100vh;
@@ -53,7 +45,9 @@
   background:
     radial-gradient(closest-side, rgba(46, 91, 255, 0.18), transparent 70%),
     radial-gradient(closest-side, rgba(28, 176, 246, 0.16), transparent 70%);
-  background-position: 30% 40%, 75% 30%;
+  background-position:
+    30% 40%,
+    75% 30%;
   background-repeat: no-repeat;
   filter: blur(6px);
   pointer-events: none;
