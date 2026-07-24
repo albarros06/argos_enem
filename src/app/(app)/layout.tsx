@@ -7,6 +7,7 @@ import { RenewalBanner } from "@/components/RenewalBanner";
 import { LogoutButton } from "@/components/LogoutButton";
 import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import Button from "@/components/Button/Button";
+import Logo from "@/components/Logo/Logo";
 import { BottomTabBar } from "./BottomTabBar";
 import { NavOverflowMenu } from "./NavOverflowMenu";
 import styles from "./app-layout.module.css";
@@ -29,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <nav className={styles.nav}>
         <div className={styles.navContent}>
           <Link href="/dashboard" className={styles.brand} aria-label="Argos — início">
-            <span className={styles.brandMark} aria-hidden="true" />
+            <Logo size={26} />
             Argos
           </Link>
           <div className={styles.navLinks}>
