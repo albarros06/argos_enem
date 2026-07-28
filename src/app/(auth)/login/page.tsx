@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Input from "@/components/Input/Input";
 import Button from "@/components/Button/Button";
+import { LoginIntro } from "./LoginIntro";
 import styles from "../auth.module.css";
 
 function LoginForm() {
@@ -68,8 +69,11 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
+    <>
+      <LoginIntro />
+      <Suspense>
+        <LoginForm />
+      </Suspense>
+    </>
   );
 }
