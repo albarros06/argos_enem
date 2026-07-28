@@ -29,7 +29,8 @@ function ResetPasswordForm() {
       setDone(true);
     } else {
       const body = await response.json().catch(() => null);
-      setError(body?.error?.message ?? "Não foi possível redefinir a senha.");
+      const fieldError = body?.error?.details?.newPassword?.[0];
+      setError(fieldError ?? body?.error?.message ?? "Não foi possível redefinir a senha.");
     }
   }
 
@@ -56,8 +57,8 @@ function ResetPasswordForm() {
           id="newPassword"
           name="newPassword"
           type="password"
-          label="Nova senha (mínimo 8 caracteres)"
-          minLength={8}
+          label="Nova senha (mínimo 10 caracteres)"
+          minLength={10}
           required
           disabled={!token || submitting}
         />

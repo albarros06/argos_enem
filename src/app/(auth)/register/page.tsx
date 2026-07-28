@@ -30,7 +30,8 @@ export default function RegisterPage() {
       setDone(true);
     } else {
       const body = await response.json().catch(() => null);
-      setError(body?.error?.message ?? "Não foi possível criar a conta.");
+      const fieldError = body?.error?.details?.password?.[0];
+      setError(fieldError ?? body?.error?.message ?? "Não foi possível criar a conta.");
     }
   }
 
@@ -59,8 +60,8 @@ export default function RegisterPage() {
           id="password"
           name="password"
           type="password"
-          label="Senha (mínimo 8 caracteres)"
-          minLength={8}
+          label="Senha (mínimo 10 caracteres)"
+          minLength={10}
           required
           disabled={submitting}
         />
