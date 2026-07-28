@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getParticipationHistory } from "@/modules/weekly";
+import { getActiveTier } from "@/modules/billing";
+import { PremiumGate } from "@/components/PremiumGate/PremiumGate";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +11,15 @@ export default async function WeeklyHistoryPage() {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/login");
+  }
+
+  if ((await getActiveTier(session.user.id)) !== "premium") {
+    return (
+      <PremiumGate
+        feature="A Redação da semana"
+        description="Acompanhe seu histórico de participações e notas nos desafios semanais. Disponível no plano Premium."
+      />
+    );
   }
 
   const { entries } = await getParticipationHistory(session.user.id);

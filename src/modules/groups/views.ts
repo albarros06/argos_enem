@@ -10,7 +10,7 @@ export interface GroupDetailView {
     name: string;
     leaderId: string | null;
     leaderName: string | null;
-    inviteCode: string;
+    inviteCode: string | null;
     memberCount: number;
   };
   members: { userId: string; name: string; role: "leader" | "member"; joinedAt: Date | null }[];
@@ -20,8 +20,12 @@ export interface GroupDetailView {
 
 // Visão composta da página de grupo: dados do grupo, membros, tema ativo (ou
 // ranking congelado do último tema encerrado) — reúne group/theme/content/
-// ranking num único payload para a API e a página do App Router.
-export async function getGroupDetailView(groupId: string): Promise<GroupDetailView> {
+// ranking num único payload para a API e a página do App Router. O código de
+// convite só é exposto ao líder — membros não podem convidar outros alunos.
+export async function getGroupDetailView(
+  groupId: string,
+  callerId: string,
+): Promise<GroupDetailView> {
   const group = await prisma.group.findUnique({
     where: { id: groupId },
     include: {
@@ -60,7 +64,7 @@ export async function getGroupDetailView(groupId: string): Promise<GroupDetailVi
       name: group.name,
       leaderId: group.leaderId,
       leaderName: group.leader?.name ?? null,
-      inviteCode: group.inviteCode,
+      inviteCode: group.leaderId === callerId ? group.inviteCode : null,
       memberCount: members.length,
     },
     members,

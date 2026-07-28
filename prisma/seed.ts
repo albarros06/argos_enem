@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 // Business numbers live here as seed data, never as literals in business logic (R11).
 const plans = [
-  { tier: "entry" as const, name: "Plano Essencial", priceCents: 2990, monthlyQuota: 12 },
+  { tier: "entry" as const, name: "Plano Essencial", priceCents: 2990, monthlyQuota: 8 },
   { tier: "premium" as const, name: "Plano Premium", priceCents: 4990, monthlyQuota: 30 },
 ];
 

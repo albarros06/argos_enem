@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/api";
 import { assertRateLimit } from "@/lib/rateLimit";
 import { verifyCredentials } from "@/modules/auth";
+import { getActiveTier } from "@/modules/billing";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: env().AUTH_SECRET,
@@ -67,6 +68,19 @@ export async function requireVerifiedUser(
   const user = await requireUser();
   if (!user.emailVerifiedAt) {
     throw new ApiError("EMAIL_NOT_VERIFIED", 403, message);
+  }
+  return user;
+}
+
+// Gate dos recursos exclusivos do plano Premium (Redação da semana e Grupos).
+// Usuários sem assinatura premium vigente recebem PREMIUM_REQUIRED — o mesmo
+// código usado no fluxo de submissão — para que a UI direcione ao upgrade.
+export async function requirePremiumUser(
+  message = "Este recurso é exclusivo para assinantes do plano Premium.",
+): Promise<User> {
+  const user = await requireUser();
+  if ((await getActiveTier(user.id)) !== "premium") {
+    throw new ApiError("PREMIUM_REQUIRED", 403, message);
   }
   return user;
 }

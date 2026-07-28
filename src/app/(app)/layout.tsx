@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { getActiveTier } from "@/modules/billing";
 import { prisma } from "@/lib/prisma";
 import { CreditBalance } from "@/components/CreditBalance";
 import { RenewalBanner } from "@/components/RenewalBanner";
@@ -24,6 +25,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     select: { role: true },
   });
 
+  // Redação da semana e Grupos são exclusivos do plano Premium: quando o
+  // usuário não é premium, os links ganham um cadeado indicando o bloqueio.
+  const isPremium = (await getActiveTier(session.user.id)) === "premium";
+
   return (
     <>
       <nav className={styles.nav}>
@@ -41,9 +46,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
             <Link href="/redacoes-semana" className={styles.navLink}>
               Redação da semana
+              {!isPremium && (
+                <span className={styles.navLock} aria-label="Exclusivo Premium" title="Exclusivo Premium">
+                  🔒
+                </span>
+              )}
             </Link>
             <Link href="/groups" className={styles.navLink}>
               Grupos
+              {!isPremium && (
+                <span className={styles.navLock} aria-label="Exclusivo Premium" title="Exclusivo Premium">
+                  🔒
+                </span>
+              )}
             </Link>
           </div>
           <div className={styles.desktopOnly}>
@@ -79,7 +94,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Link href="/submissions/new" className={styles.fab} aria-label="Nova redação">
         +
       </Link>
-      <BottomTabBar />
+      <BottomTabBar isPremium={isPremium} />
     </>
   );
 }

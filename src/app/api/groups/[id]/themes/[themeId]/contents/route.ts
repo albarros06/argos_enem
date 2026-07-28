@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { ApiError, handleRoute, parseBody } from "@/lib/api";
-import { requireUser } from "@/lib/auth";
+import { requirePremiumUser } from "@/lib/auth";
 import { addContent, addContentSchema, getThemeById, requireGroupLeader } from "@/modules/groups";
 
 export const dynamic = "force-dynamic";
 
 export const POST = handleRoute<{ id: string; themeId: string }>(async (request, context) => {
-  const user = await requireUser();
+  const user = await requirePremiumUser();
   const { id, themeId } = await context.params;
   await requireGroupLeader(id, user.id);
   const theme = await getThemeById(themeId);
