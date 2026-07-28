@@ -5,19 +5,20 @@ import { usePathname } from "next/navigation";
 import styles from "./app-layout.module.css";
 
 const TABS = [
-  { href: "/dashboard", label: "Painel" },
-  { href: "/submissions", label: "Redações" },
-  { href: "/redacoes-semana", label: "Semana" },
-  { href: "/groups", label: "Grupos" },
+  { href: "/dashboard", label: "Painel", premium: false },
+  { href: "/submissions", label: "Redações", premium: false },
+  { href: "/redacoes-semana", label: "Semana", premium: true },
+  { href: "/groups", label: "Grupos", premium: true },
 ];
 
-export function BottomTabBar() {
+export function BottomTabBar({ isPremium }: { isPremium: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav className={styles.bottomTabBar} aria-label="Navegação principal">
       {TABS.map((tab) => {
         const active = pathname === tab.href || pathname?.startsWith(`${tab.href}/`);
+        const locked = tab.premium && !isPremium;
         return (
           <Link
             key={tab.href}
@@ -26,6 +27,11 @@ export function BottomTabBar() {
           >
             <span className={styles.bottomTabDot} aria-hidden="true" />
             {tab.label}
+            {locked && (
+              <span className={styles.bottomTabLock} aria-label="Exclusivo Premium">
+                🔒
+              </span>
+            )}
           </Link>
         );
       })}

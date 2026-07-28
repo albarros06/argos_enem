@@ -4,7 +4,15 @@ import { storage } from "@/lib/storage";
 import { FAKE_ESSAY_TEXT } from "@/modules/transcription";
 import { runAccountDeletion } from "@/modules/auth/deletion";
 import { proposeTheme } from "@/modules/groups";
-import { actAs, createUser, jsonRequest, resetDb, routeContext } from "../helpers";
+import { actAs, createUser, jsonRequest, makePremium, resetDb, routeContext } from "../helpers";
+
+// Grupos são exclusivos do plano Premium (requirePremiumUser). Todo usuário que
+// exercita as rotas de grupo precisa de assinatura premium vigente.
+async function createPremiumUser() {
+  const user = await createUser();
+  await makePremium(user.id);
+  return user;
+}
 
 vi.mock("next-auth", () => ({
   default: () => ({
@@ -48,7 +56,7 @@ describe("groups API — creation, invite, join", () => {
   beforeEach(resetDb);
 
   it("POST /api/groups returns the group with the caller as leader and an inviteCode", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const response = await createGroupRoute(
       jsonRequest("/api/groups", "POST", { name: "Turma A" }),
@@ -68,7 +76,7 @@ describe("groups API — creation, invite, join", () => {
   });
 
   it("POST /api/groups/join adds a GroupMember row", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -77,7 +85,7 @@ describe("groups API — creation, invite, join", () => {
       )
     ).json();
 
-    const member = await createUser();
+    const member = await createPremiumUser();
     actAs(member.id);
     const join = await joinGroupRoute(
       jsonRequest("/api/groups/join", "POST", { inviteCode: group.inviteCode }),
@@ -95,7 +103,7 @@ describe("groups API — creation, invite, join", () => {
   });
 
   it("an invalid invite code returns INVITE_NOT_FOUND", async () => {
-    const user = await createUser();
+    const user = await createPremiumUser();
     actAs(user.id);
     const response = await joinGroupRoute(
       jsonRequest("/api/groups/join", "POST", { inviteCode: "codigo-invalido" }),
@@ -106,7 +114,7 @@ describe("groups API — creation, invite, join", () => {
   });
 
   it("only the leader sees the invite code in the group detail view", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -115,7 +123,7 @@ describe("groups API — creation, invite, join", () => {
       )
     ).json();
 
-    const member = await createUser();
+    const member = await createPremiumUser();
     actAs(member.id);
     await joinGroupRoute(
       jsonRequest("/api/groups/join", "POST", { inviteCode: group.inviteCode }),
@@ -144,7 +152,7 @@ describe("groups API — theme proposal and support content", () => {
   beforeEach(resetDb);
 
   it("leader proposes a theme with text and file content; leader closes it", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -220,7 +228,7 @@ describe("groups API — theme proposal and support content", () => {
   });
 
   it("returns support text in full, without truncation", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -265,7 +273,7 @@ describe("groups API — member submission and ranking", () => {
   beforeEach(resetDb);
 
   it("full submit → confirm → evaluate → ranking, with anonymous display masked", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -275,7 +283,7 @@ describe("groups API — member submission and ranking", () => {
     ).json();
     const theme = await proposeTheme(group.id, leader.id, "Tema do grupo");
 
-    const member = await createUser();
+    const member = await createPremiumUser();
     actAs(member.id);
     await joinGroupRoute(
       jsonRequest("/api/groups/join", "POST", { inviteCode: group.inviteCode }),
@@ -338,7 +346,7 @@ describe("groups API — member submission and ranking", () => {
   });
 
   it("rejects a second submission to the same theme", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -379,7 +387,7 @@ describe("groups API — leader management", () => {
   beforeEach(resetDb);
 
   it("removing a member revokes their access but keeps their ranking row", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -388,7 +396,7 @@ describe("groups API — leader management", () => {
       )
     ).json();
 
-    const member = await createUser();
+    const member = await createPremiumUser();
     actAs(member.id);
     await joinGroupRoute(
       jsonRequest("/api/groups/join", "POST", { inviteCode: group.inviteCode }),
@@ -412,7 +420,7 @@ describe("groups API — leader management", () => {
   });
 
   it("regenerating the invite invalidates the old code", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -428,7 +436,7 @@ describe("groups API — leader management", () => {
     );
     expect(regenerate.status).toBe(200);
 
-    const other = await createUser();
+    const other = await createPremiumUser();
     actAs(other.id);
     const rejoin = await joinGroupRoute(
       jsonRequest("/api/groups/join", "POST", { inviteCode: oldCode }),
@@ -439,7 +447,7 @@ describe("groups API — leader management", () => {
   });
 
   it("deleting the group returns 404 for all former members", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -448,7 +456,7 @@ describe("groups API — leader management", () => {
       )
     ).json();
 
-    const member = await createUser();
+    const member = await createPremiumUser();
     actAs(member.id);
     await joinGroupRoute(
       jsonRequest("/api/groups/join", "POST", { inviteCode: group.inviteCode }),
@@ -475,7 +483,7 @@ describe("groups + LGPD account deletion", () => {
   beforeEach(resetDb);
 
   it("deleting a leader's account leaves the group intact with leaderId null", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -493,7 +501,7 @@ describe("groups + LGPD account deletion", () => {
   });
 
   it("deleting a member's account cascades their entries without renumbering other ranks", async () => {
-    const leader = await createUser();
+    const leader = await createPremiumUser();
     actAs(leader.id);
     const group = await (
       await createGroupRoute(
@@ -503,8 +511,8 @@ describe("groups + LGPD account deletion", () => {
     ).json();
     const theme = await proposeTheme(group.id, leader.id, "Tema do grupo");
 
-    const memberA = await createUser();
-    const memberB = await createUser();
+    const memberA = await createPremiumUser();
+    const memberB = await createPremiumUser();
     for (const member of [memberA, memberB]) {
       actAs(member.id);
       await joinGroupRoute(

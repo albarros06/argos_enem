@@ -2,11 +2,25 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getActiveThemeView, getMyActiveEntryView } from "@/modules/weekly";
 import { getActiveTier } from "@/modules/billing";
+import { PremiumGate } from "@/components/PremiumGate/PremiumGate";
 import { Countdown } from "./Countdown";
 
 export const dynamic = "force-dynamic";
 
 export default async function WeeklyThemePage() {
+  // Recurso exclusivo do plano Premium: sem assinatura vigente, exibe o
+  // paywall no lugar de qualquer conteúdo do tema ou ranking.
+  const session = await auth();
+  const tier = session?.user?.id ? await getActiveTier(session.user.id) : null;
+  if (tier !== "premium") {
+    return (
+      <PremiumGate
+        feature="A Redação da semana"
+        description="Participe do desafio semanal com um tema no estilo ENEM, receba sua correção e dispute o ranking com outros estudantes. Disponível no plano Premium."
+      />
+    );
+  }
+
   const view = await getActiveThemeView();
 
   if (!view) {
@@ -21,9 +35,7 @@ export default async function WeeklyThemePage() {
     );
   }
 
-  const session = await auth();
   const myEntry = session?.user?.id ? await getMyActiveEntryView(session.user.id) : null;
-  const tier = session?.user?.id ? await getActiveTier(session.user.id) : null;
 
   return (
     <>
@@ -68,16 +80,11 @@ export default async function WeeklyThemePage() {
               ? `Sua posição: ${myEntry.rank}º de ${myEntry.totalParticipants} — nota ${myEntry.totalScore}.`
               : "Sua redação está sendo corrigida. Sua posição aparecerá quando a correção terminar."}
           </p>
-        ) : tier === "premium" ? (
+        ) : (
           <p>
             <Link className="button" href={`/submissions/new?weeklyThemeId=${view.theme.id}`}>
               Participar
             </Link>
-          </p>
-        ) : (
-          <p className="muted">
-            A participação é exclusiva para assinantes do plano premium.{" "}
-            <Link href="/billing">Conheça os planos</Link>.
           </p>
         )}
       </section>

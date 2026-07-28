@@ -1,12 +1,24 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { listForUser } from "@/modules/groups";
+import { getActiveTier } from "@/modules/billing";
+import { PremiumGate } from "@/components/PremiumGate/PremiumGate";
 import { CreateGroupForm } from "./CreateGroupForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function GroupsPage() {
   const user = await requireUser();
+
+  if ((await getActiveTier(user.id)) !== "premium") {
+    return (
+      <PremiumGate
+        feature="Os Grupos"
+        description="Crie ou entre em grupos de estudo, proponha temas e dispute o ranking com seus colegas. Disponível no plano Premium."
+      />
+    );
+  }
+
   const groups = await listForUser(user.id);
 
   return (

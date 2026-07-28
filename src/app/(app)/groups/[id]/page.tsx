@@ -2,6 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { getEntryByUserAndTheme, getGroupDetailView, requireGroupMember } from "@/modules/groups";
+import { getActiveTier } from "@/modules/billing";
+import { PremiumGate } from "@/components/PremiumGate/PremiumGate";
 import { GroupDetail } from "./GroupDetail";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +11,15 @@ export const dynamic = "force-dynamic";
 export default async function GroupPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser();
+
+  if ((await getActiveTier(user.id)) !== "premium") {
+    return (
+      <PremiumGate
+        feature="Os Grupos"
+        description="Entre em grupos de estudo, participe dos temas propostos pelo líder e dispute o ranking do grupo. Disponível no plano Premium."
+      />
+    );
+  }
 
   try {
     await requireGroupMember(id, user.id);

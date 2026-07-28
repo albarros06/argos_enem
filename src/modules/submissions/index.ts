@@ -88,12 +88,19 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     weeklyThemeTitle = activeTheme.title;
   }
 
-  // Participação em tema de grupo: exige apenas ser membro do grupo (líder ou
-  // convidado) — sem restrição de plano, mesma regra de crédito de qualquer
-  // submissão regular (FR-015, FR-016, FR-017).
+  // Participação em tema de grupo: recurso exclusivo do plano Premium (assim
+  // como a redação da semana). Verificado antes do paywall de créditos para
+  // que não-premium recebam a mensagem correta de upgrade (FR-015, FR-016).
   let groupThemeId: string | undefined;
   let groupThemeTitle: string | undefined;
   if (input.groupThemeId) {
+    if ((await getActiveTier(userId)) !== "premium") {
+      throw new ApiError(
+        "PREMIUM_REQUIRED",
+        402,
+        "Os grupos são exclusivos para assinantes do plano premium.",
+      );
+    }
     const theme = await getGroupThemeById(input.groupThemeId);
     if (!theme || theme.status !== "active") {
       throw new ApiError("THEME_NOT_ACTIVE", 409, "O tema deste grupo não está mais ativo.");

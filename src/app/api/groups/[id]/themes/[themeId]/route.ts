@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleRoute, parseBody } from "@/lib/api";
-import { requireUser } from "@/lib/auth";
+import { requirePremiumUser } from "@/lib/auth";
 import { closeTheme } from "@/modules/groups";
 
 const patchSchema = z.object({ action: z.literal("close") });
 
 export const PATCH = handleRoute<{ id: string; themeId: string }>(async (request, context) => {
-  const user = await requireUser();
+  const user = await requirePremiumUser();
   const { id, themeId } = await context.params;
   await parseBody(request, patchSchema);
   const theme = await closeTheme(id, user.id, themeId);

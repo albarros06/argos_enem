@@ -165,12 +165,33 @@ export async function createCompletedGroupEntry(params: {
 
 export async function seedPlans() {
   const entry = await prisma.subscriptionPlan.create({
-    data: { tier: "entry", name: "Plano Essencial", priceCents: 2990, monthlyQuota: 12 },
+    data: { tier: "entry", name: "Plano Essencial", priceCents: 2990, monthlyQuota: 8 },
   });
   const premium = await prisma.subscriptionPlan.create({
     data: { tier: "premium", name: "Plano Premium", priceCents: 4990, monthlyQuota: 30 },
   });
   return { entry, premium };
+}
+
+// Dá ao usuário uma assinatura premium vigente — pré-requisito para os recursos
+// exclusivos (Redação da semana e Grupos), gated por requirePremiumUser.
+export async function makePremium(userId: string) {
+  const premium =
+    (await prisma.subscriptionPlan.findFirst({ where: { tier: "premium", active: true } })) ??
+    (await prisma.subscriptionPlan.create({
+      data: { tier: "premium", name: "Plano Premium", priceCents: 4990, monthlyQuota: 30 },
+    }));
+  const now = new Date();
+  return prisma.subscription.create({
+    data: {
+      userId,
+      planId: premium.id,
+      asaasSubscriptionId: `sub_premium_${userId}`,
+      status: "active",
+      currentPeriodStart: now,
+      currentPeriodEnd: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+    },
+  });
 }
 
 // Linhas mínimas para satisfazer FKs do ledger em testes de crédito.
