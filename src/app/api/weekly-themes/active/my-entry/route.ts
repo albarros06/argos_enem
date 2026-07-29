@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { ApiError, handleRoute } from "@/lib/api";
-import { requirePremiumUser } from "@/lib/auth";
+import { requirePaidUser } from "@/lib/auth";
 import { getMyActiveEntryView } from "@/modules/weekly";
 
 export const dynamic = "force-dynamic";
 
 // Colocação do próprio aluno no tema ativo, mesmo fora do top 50 (FR-017).
 export const GET = handleRoute(async () => {
-  const user = await requirePremiumUser();
+  const user = await requirePaidUser();
   const result = await getMyActiveEntryView(user.id);
   if (result.status === "no_theme") {
     throw new ApiError("NO_ACTIVE_THEME", 404, "Não há tema ativo no momento.");

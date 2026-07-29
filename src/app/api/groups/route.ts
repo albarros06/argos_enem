@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleRoute, parseBody } from "@/lib/api";
-import { requirePremiumUser } from "@/lib/auth";
+import { requirePaidUser, requirePremiumUser } from "@/lib/auth";
 import { createGroup, listForUser } from "@/modules/groups";
 
 export const dynamic = "force-dynamic";
 
 export const GET = handleRoute(async () => {
-  const user = await requirePremiumUser();
+  const user = await requirePaidUser();
   return NextResponse.json({ groups: await listForUser(user.id) });
 });
 

@@ -85,6 +85,18 @@ export async function requirePremiumUser(
   return user;
 }
 
+// Gate dos recursos abertos a qualquer assinante pago (entry ou premium),
+// como participação em Grupos e na Redação da semana no nível básico.
+export async function requirePaidUser(
+  message = "Este recurso é exclusivo para assinantes.",
+): Promise<User> {
+  const user = await requireUser();
+  if ((await getActiveTier(user.id)) === null) {
+    throw new ApiError("PREMIUM_REQUIRED", 403, message);
+  }
+  return user;
+}
+
 // Gate do painel administrativo (/admin e /api/admin). Sessão sem role de
 // administrador é rejeitada (FR-001).
 export async function requireAdmin(): Promise<User> {

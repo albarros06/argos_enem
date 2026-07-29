@@ -8,15 +8,15 @@ import { Countdown } from "./Countdown";
 export const dynamic = "force-dynamic";
 
 export default async function WeeklyThemePage() {
-  // Recurso exclusivo do plano Premium: sem assinatura vigente, exibe o
-  // paywall no lugar de qualquer conteúdo do tema ou ranking.
+  // Recurso exclusivo de assinantes (entry ou premium): sem assinatura
+  // vigente, exibe o paywall no lugar de qualquer conteúdo do tema ou ranking.
   const session = await auth();
   const tier = session?.user?.id ? await getActiveTier(session.user.id) : null;
-  if (tier !== "premium") {
+  if (tier === null) {
     return (
       <PremiumGate
         feature="A Redação da semana"
-        description="Participe do desafio semanal com um tema no estilo ENEM, receba sua correção e dispute o ranking com outros estudantes. Disponível no plano Premium."
+        description="Participe do desafio semanal com um tema no estilo ENEM e receba sua correção. Disponível a partir do plano Essencial (o ranking público é exclusivo do plano Premium)."
       />
     );
   }
@@ -76,9 +76,11 @@ export default async function WeeklyThemePage() {
         <h3>Sua participação</h3>
         {myEntry?.status === "ok" ? (
           <p className="banner">
-            {myEntry.rank !== null
-              ? `Sua posição: ${myEntry.rank}º de ${myEntry.totalParticipants} — nota ${myEntry.totalScore}.`
-              : "Sua redação está sendo corrigida. Sua posição aparecerá quando a correção terminar."}
+            {myEntry.totalScore === null
+              ? "Sua redação está sendo corrigida. Sua nota aparecerá quando a correção terminar."
+              : myEntry.rank !== null
+                ? `Sua posição: ${myEntry.rank}º de ${myEntry.totalParticipants} — nota ${myEntry.totalScore}.`
+                : `Sua redação foi corrigida — nota ${myEntry.totalScore}.`}
           </p>
         ) : (
           <p>

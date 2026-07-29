@@ -43,7 +43,10 @@ export type MyEntryResult =
     };
 
 // Colocação do próprio aluno no tema ativo, válida mesmo fora do top 50
-// (FR-017). A nota e a posição só existem após a avaliação concluída.
+// (FR-017). A nota só existe após a avaliação concluída. rank/totalParticipants
+// vêm de getUserLiveRank, que só inclui assinantes premium (ranking exclusivo
+// — ver rankedEntries) — um assinante essencial sempre recebe rank: null aqui,
+// mesmo já avaliado, mas ainda enxerga sua própria nota.
 export async function getMyActiveEntryView(userId: string): Promise<MyEntryResult> {
   const theme = await getActiveTheme();
   if (!theme) {
@@ -55,14 +58,14 @@ export async function getMyActiveEntryView(userId: string): Promise<MyEntryResul
   }
   const submission = await prisma.submission.findUniqueOrThrow({
     where: { id: entry.submissionId },
-    select: { status: true },
+    select: { status: true, evaluation: { select: { totalScore: true } } },
   });
   const rankInfo = await getUserLiveRank(theme.id, userId);
   return {
     status: "ok",
     submissionId: entry.submissionId,
     submissionStatus: submission.status,
-    totalScore: rankInfo?.totalScore ?? null,
+    totalScore: submission.evaluation?.totalScore ?? null,
     rank: rankInfo?.rank ?? null,
     totalParticipants: rankInfo?.totalParticipants ?? (await getParticipantCount(theme.id)),
     displayAs: entry.displayAs,
@@ -74,14 +77,17 @@ export interface HistoryEntry {
   themeTitle: string;
   closedAt: Date | null;
   totalScore: number | null;
-  finalRank: number;
+  finalRank: number | null;
   totalParticipants: number;
 }
 
 // Histórico de participação do aluno: posição final por tema encerrado
-// (FR-021, histórico por tema, não cumulativo).
+// (FR-021, histórico por tema, não cumulativo). finalRank vem null para
+// assinantes essenciais (fora do ranking exclusivo premium — ver
+// rankedEntries) mesmo tendo participado e sido avaliados; o filtro é por
+// tema encerrado, não por ter uma posição.
 export async function getParticipationHistory(userId: string, page = 1, pageSize = 20) {
-  const where = { userId, finalRank: { not: null } };
+  const where = { userId, theme: { closedAt: { not: null } } };
   const [rows, total] = await Promise.all([
     prisma.weeklyThemeEntry.findMany({
       where,
@@ -111,7 +117,7 @@ export async function getParticipationHistory(userId: string, page = 1, pageSize
     themeTitle: row.theme.title,
     closedAt: row.theme.closedAt,
     totalScore: row.submission.evaluation?.totalScore ?? null,
-    finalRank: row.finalRank!,
+    finalRank: row.finalRank,
     totalParticipants: countByTheme.get(row.themeId) ?? 0,
   }));
 

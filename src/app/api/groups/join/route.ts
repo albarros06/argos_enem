@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleRoute, parseBody } from "@/lib/api";
-import { requirePremiumUser } from "@/lib/auth";
+import { requirePaidUser } from "@/lib/auth";
 import { joinGroup } from "@/modules/groups";
 
 const joinSchema = z.object({
@@ -9,7 +9,7 @@ const joinSchema = z.object({
 });
 
 export const POST = handleRoute(async (request) => {
-  const user = await requirePremiumUser();
+  const user = await requirePaidUser();
   const { inviteCode } = await parseBody(request, joinSchema);
   const group = await joinGroup(user.id, inviteCode);
   return NextResponse.json(group);

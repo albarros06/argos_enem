@@ -165,21 +165,21 @@ export async function createCompletedGroupEntry(params: {
 
 export async function seedPlans() {
   const entry = await prisma.subscriptionPlan.create({
-    data: { tier: "entry", name: "Plano Essencial", priceCents: 2990, monthlyQuota: 8 },
+    data: { tier: "entry", name: "Plano Essencial", priceCents: 2990, monthlyQuota: 4 },
   });
   const premium = await prisma.subscriptionPlan.create({
-    data: { tier: "premium", name: "Plano Premium", priceCents: 4990, monthlyQuota: 30 },
+    data: { tier: "premium", name: "Plano Premium", priceCents: 3990, monthlyQuota: 12 },
   });
   return { entry, premium };
 }
 
-// Dá ao usuário uma assinatura premium vigente — pré-requisito para os recursos
-// exclusivos (Redação da semana e Grupos), gated por requirePremiumUser.
+// Dá ao usuário uma assinatura premium vigente — pré-requisito para o ranking
+// da Redação da semana e para liderar/criar Grupos, gated por requirePremiumUser.
 export async function makePremium(userId: string) {
   const premium =
     (await prisma.subscriptionPlan.findFirst({ where: { tier: "premium", active: true } })) ??
     (await prisma.subscriptionPlan.create({
-      data: { tier: "premium", name: "Plano Premium", priceCents: 4990, monthlyQuota: 30 },
+      data: { tier: "premium", name: "Plano Premium", priceCents: 3990, monthlyQuota: 12 },
     }));
   const now = new Date();
   return prisma.subscription.create({
@@ -187,6 +187,28 @@ export async function makePremium(userId: string) {
       userId,
       planId: premium.id,
       asaasSubscriptionId: `sub_premium_${userId}`,
+      status: "active",
+      currentPeriodStart: now,
+      currentPeriodEnd: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+    },
+  });
+}
+
+// Dá ao usuário uma assinatura do plano essencial (entry) vigente —
+// pré-requisito básico para participar de Grupos/Redação da semana, gated
+// por requirePaidUser, mas sem acesso ao ranking (exclusivo premium).
+export async function makeEntry(userId: string) {
+  const entry =
+    (await prisma.subscriptionPlan.findFirst({ where: { tier: "entry", active: true } })) ??
+    (await prisma.subscriptionPlan.create({
+      data: { tier: "entry", name: "Plano Essencial", priceCents: 2990, monthlyQuota: 4 },
+    }));
+  const now = new Date();
+  return prisma.subscription.create({
+    data: {
+      userId,
+      planId: entry.id,
+      asaasSubscriptionId: `sub_entry_${userId}`,
       status: "active",
       currentPeriodStart: now,
       currentPeriodEnd: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createGroup, joinGroup, proposeTheme } from "@/modules/groups";
 import { createSubmission } from "@/modules/submissions";
 import { getBalance } from "@/modules/credits";
-import { createUser, resetDb } from "../../helpers";
+import { createUser, makeEntry, resetDb } from "../../helpers";
 
 function submissionBody(overrides?: Record<string, unknown>) {
   return {
@@ -18,6 +18,9 @@ async function setupActiveTheme() {
   const leader = await createUser();
   const group = await createGroup(leader.id, "Turma A");
   const member = await createUser();
+  // Participar de temas de grupo exige assinatura (entry ou premium) — a
+  // essencial já basta, sem exigir premium (ver createSubmission).
+  await makeEntry(member.id);
   await joinGroup(member.id, group.inviteCode);
   const theme = await proposeTheme(group.id, leader.id, "Tema do grupo");
   return { leader, group, member, theme };
@@ -29,6 +32,7 @@ describe("group theme submission", () => {
   it("rejects a non-member submitting against a group theme", async () => {
     const { theme } = await setupActiveTheme();
     const outsider = await createUser();
+    await makeEntry(outsider.id);
     await expect(
       createSubmission(outsider.id, submissionBody({ groupThemeId: theme.id })),
     ).rejects.toMatchObject({ code: "NOT_GROUP_MEMBER" });
@@ -72,10 +76,10 @@ describe("group theme submission", () => {
     ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
   });
 
-  it("runs no subscription-tier check on the group-theme branch", async () => {
+  it("accepts an entry-tier (non-premium) member — groups aren't premium-exclusive", async () => {
     const { theme, member } = await setupActiveTheme();
-    // O membro não tem nenhuma assinatura — a redação da semana exigiria premium,
-    // mas a submissão de grupo usa a mesma regra de crédito de qualquer submissão.
+    // O membro tem plano essencial (entry), não premium — grupos exigem apenas
+    // alguma assinatura paga, ao contrário do ranking da redação da semana.
     const before = await getBalance(member.id);
     expect(before.freeRemaining).toBeGreaterThan(0);
     await expect(

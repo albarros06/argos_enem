@@ -26,9 +26,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     select: { role: true },
   });
 
-  // Redação da semana e Grupos são exclusivos do plano Premium: quando o
-  // usuário não é premium, os links ganham um cadeado indicando o bloqueio.
-  const isPremium = (await getActiveTier(session.user.id)) === "premium";
+  // Redação da semana e Grupos são exclusivos de assinantes (entry ou
+  // premium): sem assinatura vigente, os links ganham um cadeado indicando o
+  // bloqueio.
+  const isPaid = (await getActiveTier(session.user.id)) !== null;
 
   return (
     <>
@@ -47,16 +48,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
             <Link href="/redacoes-semana" className={styles.navLink}>
               Redação da semana
-              {!isPremium && (
-                <span className={styles.navLock} aria-label="Exclusivo Premium" title="Exclusivo Premium">
+              {!isPaid && (
+                <span className={styles.navLock} aria-label="Exclusivo para assinantes" title="Exclusivo para assinantes">
                   🔒
                 </span>
               )}
             </Link>
             <Link href="/groups" className={styles.navLink}>
               Grupos
-              {!isPremium && (
-                <span className={styles.navLock} aria-label="Exclusivo Premium" title="Exclusivo Premium">
+              {!isPaid && (
+                <span className={styles.navLock} aria-label="Exclusivo para assinantes" title="Exclusivo para assinantes">
                   🔒
                 </span>
               )}
@@ -95,7 +96,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Link href="/submissions/new" className={styles.fab} aria-label="Nova redação">
         +
       </Link>
-      <BottomTabBar isPremium={isPremium} />
+      <BottomTabBar isPaid={isPaid} />
     </>
   );
 }
