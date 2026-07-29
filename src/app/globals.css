@@ -182,10 +182,13 @@ textarea {
 /* Text-like fields sit directly against whatever follows (no bottom margin
    of their own) — give them breathing room before the next label/button,
    but leave checkboxes/radios alone since those sit inline with their
-   label text rather than stacked full-width. */
+   label text rather than stacked full-width. Same exclusion for width:
+   a full-width checkbox/radio would stretch its hit box across the row. */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
+  width: 100%;
+  max-width: 100%;
   margin-bottom: 0.9rem;
 }
 

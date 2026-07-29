@@ -9,6 +9,13 @@ const plans = [
 ];
 
 const themes = [
+  { title: "Perspectivas acerca do envelhecimento na sociedade brasileira", year: 2025 },
+  { title: "Desafios para a valorização da herança africana no Brasil", year: 2024 },
+  {
+    title:
+      "Desafios para o enfrentamento da invisibilidade do trabalho de cuidado realizado pela mulher no Brasil",
+    year: 2023,
+  },
   {
     title: "Desafios para a valorização de comunidades e povos tradicionais no Brasil",
     year: 2022,
