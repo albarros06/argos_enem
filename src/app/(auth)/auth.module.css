@@ -53,14 +53,6 @@
   text-decoration: none;
 }
 
-.brandMark {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--gradient-brand);
-  box-shadow: inset 0 0 0 6px var(--color-surface-bg);
-}
-
 .card {
   width: 100%;
   background-color: var(--color-surface-fg);

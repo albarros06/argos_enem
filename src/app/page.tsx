@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Button from "@/components/Button/Button";
+import Logo from "@/components/Logo/Logo";
 import { ThemeToggleClient } from "@/components/ThemeToggle/ThemeToggleClient";
 import styles from "./page.module.css";
 
@@ -23,7 +24,7 @@ export default function HomePage() {
     <>
       <header className={styles.topBar}>
         <span className={styles.brand}>
-          <span className={styles.brandMark} aria-hidden="true" />
+          <Logo size={28} />
           Argos
         </span>
         <ThemeToggleClient />
@@ -34,9 +35,7 @@ export default function HomePage() {
 
         <section className={styles.hero}>
           <span className={styles.eyebrow}>Correção de redações ENEM</span>
-          <h1 className={styles.title}>
-            Sua redação corrigida como no ENEM, em minutos.
-          </h1>
+          <h1 className={styles.title}>Sua redação corrigida como no ENEM, em minutos.</h1>
           <p className={styles.subtitle}>
             Fotografe sua redação manuscrita e receba uma avaliação alinhada às 5 competências
             oficiais: nota total, nota por competência, anotações no texto e comentário geral.
