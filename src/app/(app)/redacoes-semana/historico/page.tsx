@@ -13,11 +13,11 @@ export default async function WeeklyHistoryPage() {
     redirect("/login");
   }
 
-  if ((await getActiveTier(session.user.id)) !== "premium") {
+  if ((await getActiveTier(session.user.id)) === null) {
     return (
       <PremiumGate
         feature="A Redação da semana"
-        description="Acompanhe seu histórico de participações e notas nos desafios semanais. Disponível no plano Premium."
+        description="Acompanhe seu histórico de participações e notas nos desafios semanais. Disponível a partir do plano Essencial."
       />
     );
   }
@@ -52,7 +52,9 @@ export default async function WeeklyHistoryPage() {
                   </td>
                   <td>{entry.totalScore ?? "—"}</td>
                   <td>
-                    {entry.finalRank}º de {entry.totalParticipants}
+                    {entry.finalRank !== null
+                      ? `${entry.finalRank}º de ${entry.totalParticipants}`
+                      : "—"}
                   </td>
                 </tr>
               ))}
@@ -78,7 +80,9 @@ export default async function WeeklyHistoryPage() {
                 <div className="table-card-row">
                   <span className="table-card-label">Posição final</span>
                   <span>
-                    {entry.finalRank}º de {entry.totalParticipants}
+                    {entry.finalRank !== null
+                      ? `${entry.finalRank}º de ${entry.totalParticipants}`
+                      : "—"}
                   </span>
                 </div>
               </div>

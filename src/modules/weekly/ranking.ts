@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getActiveTier } from "@/modules/billing";
 
 // Ordenação do ranking: maior nota total primeiro; empate desfeito pela
 // confirmação mais antiga da submissão (FR-014, FR-020).
@@ -16,8 +17,12 @@ function anonymizeName(entry: RankedEntry): string {
 }
 
 // Entradas com avaliação concluída, já ordenadas pela regra do ranking.
-// O conjunto por tema é pequeno (participação premium); ordenar em memória
-// mantém a consulta legível sem custo relevante no v1 (Constitution II/IV).
+// O ranking público é exclusivo de assinantes premium (plano essencial
+// participa e é avaliado, mas fica de fora do ranking — decisão de produto);
+// entradas de assinantes não-premium são filtradas antes da ordenação, o que
+// também fecha os espaços deixados por elas na numeração de todo mundo.
+// O conjunto por tema é pequeno; ordenar em memória mantém a consulta
+// legível sem custo relevante no v1 (Constitution II/IV).
 async function rankedEntries(themeId: string): Promise<RankedEntry[]> {
   const entries = await prisma.weeklyThemeEntry.findMany({
     where: { themeId, submission: { status: "completed" } },
@@ -35,7 +40,12 @@ async function rankedEntries(themeId: string): Promise<RankedEntry[]> {
     },
   });
 
+  const tiers = await Promise.all(
+    entries.map((entry) => getActiveTier(entry.userId)),
+  );
+
   return entries
+    .filter((_entry, index) => tiers[index] === "premium")
     .map((entry) => ({
       entryId: entry.id,
       userId: entry.userId,

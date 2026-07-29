@@ -7,7 +7,7 @@ import {
   regenerateInvite,
   removeMember,
 } from "@/modules/groups";
-import { createUser, resetDb } from "../../helpers";
+import { createUser, makeEntry, makePremium, resetDb } from "../../helpers";
 
 describe("group creation and membership", () => {
   beforeEach(resetDb);
@@ -61,6 +61,8 @@ describe("group creation and membership", () => {
 
   it("rejects a 6th membership for a student already in 5 groups (leading doesn't count)", async () => {
     const member = await createUser();
+    // Cap de 5 é do plano premium (plano essencial tem cap de 1 — ver group.ts).
+    await makePremium(member.id);
     // O próprio aluno lidera um grupo — não deve contar para o limite de 5 como membro.
     await createGroup(member.id, "Grupo que eu lidero");
 
@@ -73,6 +75,21 @@ describe("group creation and membership", () => {
     const leader = await createUser();
     const sixth = await createGroup(leader.id, "Sexto grupo");
     await expect(joinGroup(member.id, sixth.inviteCode)).rejects.toMatchObject({
+      code: "MEMBER_GROUP_LIMIT",
+    });
+  });
+
+  it("rejects a 2nd membership for an entry-tier student (cap of 1)", async () => {
+    const member = await createUser();
+    await makeEntry(member.id);
+
+    const firstLeader = await createUser();
+    const first = await createGroup(firstLeader.id, "Primeiro grupo");
+    await joinGroup(member.id, first.inviteCode);
+
+    const secondLeader = await createUser();
+    const second = await createGroup(secondLeader.id, "Segundo grupo");
+    await expect(joinGroup(member.id, second.inviteCode)).rejects.toMatchObject({
       code: "MEMBER_GROUP_LIMIT",
     });
   });

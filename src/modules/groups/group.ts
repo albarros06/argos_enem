@@ -2,9 +2,10 @@ import crypto from "crypto";
 import type { Group } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/api";
+import { getActiveTier } from "@/modules/billing";
 
 const MAX_PARTICIPANTS = 30;
-const MAX_GROUPS_AS_MEMBER = 5;
+const MAX_GROUPS_AS_MEMBER_BY_TIER = { entry: 1, premium: 5 } as const;
 
 function generateInviteCode(): string {
   return crypto.randomBytes(9).toString("base64url");
@@ -16,8 +17,9 @@ export async function createGroup(userId: string, name: string): Promise<Group> 
   });
 }
 
-// Une caps (30 participantes incluindo o líder; 5 grupos por aluno como
-// membro, sem limite como líder — FR-004, FR-005) e reentrada idempotente.
+// Une caps (30 participantes incluindo o líder; 5 grupos por aluno premium
+// como membro, 1 para plano essencial, sem limite como líder — FR-004,
+// FR-005) e reentrada idempotente.
 export async function joinGroup(userId: string, inviteCode: string): Promise<Group> {
   const group = await prisma.group.findUnique({ where: { inviteCode } });
   if (!group) {
@@ -37,12 +39,14 @@ export async function joinGroup(userId: string, inviteCode: string): Promise<Gro
   if (memberCount + 1 >= MAX_PARTICIPANTS) {
     throw new ApiError("GROUP_FULL", 409, "Este grupo atingiu o limite de 30 participantes.");
   }
+  const tier = await getActiveTier(userId);
+  const maxGroupsAsMember = tier === "premium" ? MAX_GROUPS_AS_MEMBER_BY_TIER.premium : MAX_GROUPS_AS_MEMBER_BY_TIER.entry;
   const memberGroupCount = await prisma.groupMember.count({ where: { userId } });
-  if (memberGroupCount >= MAX_GROUPS_AS_MEMBER) {
+  if (memberGroupCount >= maxGroupsAsMember) {
     throw new ApiError(
       "MEMBER_GROUP_LIMIT",
       409,
-      "Você já integra o número máximo de grupos (5) como membro.",
+      `Você já integra o número máximo de grupos (${maxGroupsAsMember}) como membro.`,
     );
   }
 

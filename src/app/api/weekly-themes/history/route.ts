@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleRoute } from "@/lib/api";
-import { requirePremiumUser } from "@/lib/auth";
+import { requirePaidUser } from "@/lib/auth";
 import { getParticipationHistory } from "@/modules/weekly";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ const querySchema = z.object({
 
 // Histórico de participação do aluno em temas encerrados (FR-021).
 export const GET = handleRoute(async (request) => {
-  const user = await requirePremiumUser();
+  const user = await requirePaidUser();
   const url = new URL(request.url);
   const { page } = querySchema.parse({ page: url.searchParams.get("page") ?? undefined });
   return NextResponse.json(await getParticipationHistory(user.id, page));

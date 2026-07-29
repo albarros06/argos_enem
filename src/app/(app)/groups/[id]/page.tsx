@@ -12,11 +12,11 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const user = await requireUser();
 
-  if ((await getActiveTier(user.id)) !== "premium") {
+  if ((await getActiveTier(user.id)) === null) {
     return (
       <PremiumGate
         feature="Os Grupos"
-        description="Entre em grupos de estudo, participe dos temas propostos pelo líder e dispute o ranking do grupo. Disponível no plano Premium."
+        description="Entre em grupos de estudo, participe dos temas propostos pelo líder e dispute o ranking do grupo. Disponível a partir do plano Essencial."
       />
     );
   }

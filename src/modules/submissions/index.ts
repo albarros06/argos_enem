@@ -60,17 +60,18 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     );
   }
 
-  // Participação na redação da semana: exclusiva de assinantes premium, tema
-  // ativo e uma única submissão por tema (FR-009, FR-010, FR-012). Verificado
-  // antes do paywall para que não-premium recebam a mensagem correta.
+  // Participação na redação da semana: exclusiva de assinantes (entry ou
+  // premium), tema ativo e uma única submissão por tema (FR-009, FR-010,
+  // FR-012). Verificado antes do paywall para que não-assinantes recebam a
+  // mensagem correta.
   let weeklyThemeId: string | undefined;
   let weeklyThemeTitle: string | undefined;
   if (input.weeklyThemeId) {
-    if ((await getActiveTier(userId)) !== "premium") {
+    if ((await getActiveTier(userId)) === null) {
       throw new ApiError(
         "PREMIUM_REQUIRED",
         402,
-        "A redação da semana é exclusiva para assinantes do plano premium.",
+        "A redação da semana é exclusiva para assinantes.",
       );
     }
     const activeTheme = await getActiveTheme();
@@ -88,17 +89,18 @@ export async function createSubmission(userId: string, input: CreateSubmissionIn
     weeklyThemeTitle = activeTheme.title;
   }
 
-  // Participação em tema de grupo: recurso exclusivo do plano Premium (assim
-  // como a redação da semana). Verificado antes do paywall de créditos para
-  // que não-premium recebam a mensagem correta de upgrade (FR-015, FR-016).
+  // Participação em tema de grupo: recurso exclusivo de assinantes (entry ou
+  // premium), assim como a redação da semana. Verificado antes do paywall de
+  // créditos para que não-assinantes recebam a mensagem correta de upgrade
+  // (FR-015, FR-016).
   let groupThemeId: string | undefined;
   let groupThemeTitle: string | undefined;
   if (input.groupThemeId) {
-    if ((await getActiveTier(userId)) !== "premium") {
+    if ((await getActiveTier(userId)) === null) {
       throw new ApiError(
         "PREMIUM_REQUIRED",
         402,
-        "Os grupos são exclusivos para assinantes do plano premium.",
+        "Os grupos são exclusivos para assinantes.",
       );
     }
     const theme = await getGroupThemeById(input.groupThemeId);

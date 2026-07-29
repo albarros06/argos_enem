@@ -6,8 +6,17 @@ import {
   getUserLiveRank,
   publishTheme,
 } from "@/modules/weekly";
-import { createAdmin, createCompletedWeeklyEntry, createUser, resetDb } from "../../helpers";
+import {
+  createAdmin,
+  createCompletedWeeklyEntry,
+  createUser,
+  makeEntry,
+  makePremium,
+  resetDb,
+} from "../../helpers";
 
+// Ranking é exclusivo do plano premium (ver rankedEntries em ranking.ts) —
+// assinantes essenciais participam e são avaliados, mas ficam de fora.
 async function setupThemeWithEntries() {
   const admin = await createAdmin();
   const theme = await publishTheme(admin.id, "Tema A");
@@ -15,6 +24,7 @@ async function setupThemeWithEntries() {
   const mid = await createUser();
   const lowEarly = await createUser();
   const lowLate = await createUser();
+  await Promise.all([high, mid, lowEarly, lowLate].map((user) => makePremium(user.id)));
 
   await createCompletedWeeklyEntry({
     themeId: theme.id,
@@ -97,5 +107,40 @@ describe("weekly ranking", () => {
     });
     expect(topEntry.finalRank).toBe(1);
     expect(lastEntry.finalRank).toBe(4);
+  });
+
+  it("excludes entry-tier (non-premium) entries from the ranking and closes the gap", async () => {
+    const { high, mid, lowEarly, lowLate } = await setupThemeWithEntries();
+    const theme = await prisma.weeklyTheme.findFirstOrThrow();
+
+    // mid (nota 600, 2º lugar) é rebaixado para o plano essencial — some do
+    // ranking público e os demais avançam uma posição (FR: fecha o espaço).
+    await prisma.subscription.deleteMany({ where: { userId: mid.id } });
+    await makeEntry(mid.id);
+
+    const ranking = await getLiveRanking(theme.id, 50);
+    expect(ranking.map((row) => row.totalScore)).toEqual([800, 400, 400]);
+    expect(ranking.find((row) => row.displayName.includes("anônimo"))).toBeUndefined();
+
+    // O próprio assinante essencial não vê rank algum, mesmo já avaliado.
+    expect(await getUserLiveRank(theme.id, mid.id)).toBeNull();
+    // Quem estava em 3º (premium) agora ocupa a 2ª posição — sem buraco na numeração.
+    const earlyRank = await getUserLiveRank(theme.id, lowEarly.id);
+    expect(earlyRank?.rank).toBe(2);
+
+    const count = await computeAndStoreFinalRanks(theme.id);
+    expect(count).toBe(3);
+    const midEntry = await prisma.weeklyThemeEntry.findUniqueOrThrow({
+      where: { themeId_userId: { themeId: theme.id, userId: mid.id } },
+    });
+    expect(midEntry.finalRank).toBeNull();
+    const highEntry = await prisma.weeklyThemeEntry.findUniqueOrThrow({
+      where: { themeId_userId: { themeId: theme.id, userId: high.id } },
+    });
+    const lateEntry = await prisma.weeklyThemeEntry.findUniqueOrThrow({
+      where: { themeId_userId: { themeId: theme.id, userId: lowLate.id } },
+    });
+    expect(highEntry.finalRank).toBe(1);
+    expect(lateEntry.finalRank).toBe(3);
   });
 });

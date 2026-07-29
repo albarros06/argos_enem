@@ -9,12 +9,13 @@ export const dynamic = "force-dynamic";
 
 export default async function GroupsPage() {
   const user = await requireUser();
+  const tier = await getActiveTier(user.id);
 
-  if ((await getActiveTier(user.id)) !== "premium") {
+  if (tier === null) {
     return (
       <PremiumGate
         feature="Os Grupos"
-        description="Crie ou entre em grupos de estudo, proponha temas e dispute o ranking com seus colegas. Disponível no plano Premium."
+        description="Entre em grupos de estudo, participe dos temas propostos e dispute o ranking com seus colegas. Disponível a partir do plano Essencial."
       />
     );
   }
@@ -24,7 +25,7 @@ export default async function GroupsPage() {
   return (
     <>
       <h1>Grupos</h1>
-      <CreateGroupForm />
+      {tier === "premium" && <CreateGroupForm />}
 
       {groups.length === 0 ? (
         <p className="muted">Você ainda não participa de nenhum grupo.</p>
