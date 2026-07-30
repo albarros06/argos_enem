@@ -54,6 +54,59 @@ export const llmEvaluationSchema = z.object({
 export type LlmEvaluation = z.infer<typeof llmEvaluationSchema>;
 export type LlmAnnotation = z.infer<typeof llmAnnotationSchema>;
 
+// --- Pipeline de duas chamadas (spec 018) ---------------------------------
+// A CHAMADA 1 (pontuação, prompt v5_calibrated) devolve só as 5 notas + a flag de
+// anulação; a CHAMADA 2 (feedback) devolve as justificativas/feedback/anotações e
+// classifica o zeroReason. Ambos os resultados são mesclados em uma LlmEvaluation
+// (mesma forma persistida de sempre) antes de gravar — sem migração de schema.
+
+export type Score = z.infer<typeof competencyScoreSchema>;
+export type CompetencyNumber = 1 | 2 | 3 | 4 | 5;
+export const competencyNumberSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal(5),
+]);
+export const zeroReasonEnum = z.enum([
+  "insufficient_text",
+  "genre_disregard",
+  "theme_disconnection",
+]);
+export type ZeroReason = z.infer<typeof zeroReasonEnum>;
+
+// Saída intermediária da CHAMADA 1 (não persistida isoladamente).
+export interface ScoringResult {
+  annulled: boolean;
+  scores: Record<CompetencyNumber, Score>;
+}
+
+// Schema de validação da CHAMADA 2: mesma forma da avaliação, SEM as notas (as notas
+// já vêm fixas da CHAMADA 1). Reaproveita llmAnnotationSchema.
+export const feedbackEvaluationSchema = z.object({
+  zeroReason: z.union([z.null(), zeroReasonEnum]),
+  competencies: z
+    .array(
+      z.object({
+        competency: competencyNumberSchema,
+        justification: z.string(),
+      }),
+    )
+    .describe("Exatamente 5 itens, competências 1 a 5, apenas com a justificativa."),
+  generalFeedback: z.string(),
+  annotations: z.array(llmAnnotationSchema),
+});
+export type FeedbackEvaluation = z.infer<typeof feedbackEvaluationSchema>;
+
+// Saída intermediária da CHAMADA 2 (não persistida isoladamente).
+export interface FeedbackResult {
+  zeroReason: ZeroReason | null;
+  justifications: Record<CompetencyNumber, string>;
+  generalFeedback: string;
+  annotations: LlmAnnotation[];
+}
+
 // Constraints JSON Schema can't express; enforced after parse.
 export function validateEvaluationConsistency(evaluation: LlmEvaluation): LlmEvaluation {
   if (evaluation.competencies.length !== 5) {

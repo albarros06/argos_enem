@@ -5,7 +5,22 @@ import { logger } from "@/lib/logger";
 import { isRateLimitError, withRetry } from "@/lib/retry";
 import { vertexClient } from "@/lib/vertex";
 import { buildGradingUserMessage, RUBRIC_SYSTEM_PROMPT } from "./rubric";
-import { llmEvaluationSchema, type LlmEvaluation } from "./schema";
+import { scoringSystemInstruction, buildScoringMessage } from "./scoringPrompt";
+import {
+  FEEDBACK_SYSTEM_PROMPT,
+  buildFeedbackUserMessage,
+  GEMINI_FEEDBACK_SCHEMA,
+} from "./feedbackPrompt";
+import { parseScoreBlock } from "./scoreParser";
+import {
+  feedbackEvaluationSchema,
+  llmEvaluationSchema,
+  type CompetencyNumber,
+  type FeedbackResult,
+  type LlmEvaluation,
+  type Score,
+  type ScoringResult,
+} from "./schema";
 
 // Re-exportado para compatibilidade: a resolução de credencial Vertex mora em
 // @/lib/vertex (compartilhada entre grading e OCR via Gemini).
@@ -16,9 +31,21 @@ export interface GradingInput {
   essayText: string;
 }
 
-export interface GradingProvider {
-  grade(input: GradingInput): Promise<LlmEvaluation>;
+// Entrada da CHAMADA 2 (feedback): a redação mais as notas JÁ fixadas pela CHAMADA 1.
+export interface FeedbackInput extends GradingInput {
+  scores: Record<CompetencyNumber, Score>;
+  annulled: boolean;
 }
+
+export interface GradingProvider {
+  // Caminho legado de uma chamada (scripts/harness) — não usado no pipeline de produção.
+  grade(input: GradingInput): Promise<LlmEvaluation>;
+  // Pipeline de duas chamadas (spec 018).
+  scoreEssay(input: GradingInput): Promise<ScoringResult>;
+  generateFeedback(input: FeedbackInput): Promise<FeedbackResult>;
+}
+
+const COMPETENCIES: CompetencyNumber[] = [1, 2, 3, 4, 5];
 
 class AnthropicGradingProvider implements GradingProvider {
   private client = new Anthropic({ apiKey: env().ANTHROPIC_API_KEY });
@@ -52,6 +79,22 @@ class AnthropicGradingProvider implements GradingProvider {
       throw new Error(`Saída do modelo não parseável (stop_reason: ${response.stop_reason})`);
     }
     return response.parsed_output;
+  }
+
+  // O pipeline de duas chamadas (spec 018) é validado só no Gemini: a config da CHAMADA 1
+  // (pensamento dinâmico + teto de 32768) é específica do Gemini e o número de QWK foi
+  // medido em gemini-2.5-flash. Não construímos um caminho Anthropic especulativo
+  // (Constituição II). Produção seleciona o Gemini pelo prefixo do gradingModelId.
+  async scoreEssay(): Promise<ScoringResult> {
+    throw new Error(
+      "Correção em duas chamadas não é suportada no provider Anthropic (use um modelo gemini-*).",
+    );
+  }
+
+  async generateFeedback(): Promise<FeedbackResult> {
+    throw new Error(
+      "Correção em duas chamadas não é suportada no provider Anthropic (use um modelo gemini-*).",
+    );
   }
 }
 
@@ -142,6 +185,106 @@ class GeminiGradingProvider implements GradingProvider {
     }
     return parseGeminiEvaluation(text);
   }
+
+  // CHAMADA 1 (pontuação): prompt v5_calibrated, pensamento dinâmico, saída em texto
+  // livre terminando no bloco ANNULLED/C1..C5. SEM responseJsonSchema (a calibração
+  // depende do raciocínio livre). Config validada em gemini-2.5-flash (QWK 0.541).
+  async scoreEssay(input: GradingInput): Promise<ScoringResult> {
+    const response = await logger.vendorCall("gemini", "score_essay", () =>
+      withRetry(
+        () =>
+          this.client.models.generateContent({
+            model: business.gradingModelId,
+            contents: buildScoringMessage(input.theme, input.essayText),
+            config: {
+              systemInstruction: scoringSystemInstruction(),
+              thinkingConfig: { thinkingBudget: -1 }, // pensamento dinâmico (maior ganho de QWK)
+              temperature: 0,
+              maxOutputTokens: business.gradingMaxOutputTokens,
+            },
+          }),
+        { isRetryable: isRateLimitError },
+      ).catch((error: unknown) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `Falha ao pontuar no Vertex AI (modelo: ${business.gradingModelId}, região: ${this.location}): ${detail}`,
+        );
+      }),
+    );
+    const text = response.text;
+    if (!text) {
+      const reason = response.candidates?.[0]?.finishReason ?? "desconhecido";
+      throw new Error(`Gemini retornou pontuação vazia (finishReason: ${reason})`);
+    }
+    return parseScoreBlock(text);
+  }
+
+  // CHAMADA 2 (feedback): modelo mais barato, JSON estruturado. Só EXPLICA as notas já
+  // fixadas e classifica o zeroReason quando a redação foi anulada.
+  async generateFeedback(input: FeedbackInput): Promise<FeedbackResult> {
+    const response = await logger.vendorCall("gemini", "generate_feedback", () =>
+      withRetry(
+        () =>
+          this.client.models.generateContent({
+            model: business.feedbackModelId,
+            contents: buildFeedbackUserMessage(
+              input.theme,
+              input.essayText,
+              input.scores,
+              input.annulled,
+            ),
+            config: {
+              systemInstruction: FEEDBACK_SYSTEM_PROMPT,
+              responseMimeType: "application/json",
+              responseJsonSchema: GEMINI_FEEDBACK_SCHEMA,
+              temperature: 0,
+              maxOutputTokens: business.feedbackMaxOutputTokens,
+            },
+          }),
+        { isRetryable: isRateLimitError },
+      ).catch((error: unknown) => {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `Falha ao gerar feedback no Vertex AI (modelo: ${business.feedbackModelId}, região: ${this.location}): ${detail}`,
+        );
+      }),
+    );
+    const text = response.text;
+    if (!text) {
+      const reason = response.candidates?.[0]?.finishReason ?? "desconhecido";
+      throw new Error(`Gemini retornou feedback vazio (finishReason: ${reason})`);
+    }
+    return parseGeminiFeedback(text);
+  }
+}
+
+// Converte o texto JSON de feedback do Gemini em FeedbackResult validado. Remapeia o
+// sentinela "none" -> null e garante uma justificativa por competência (1 a 5).
+export function parseGeminiFeedback(text: string): FeedbackResult {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw new Error("Saída de feedback do Gemini não é JSON válido");
+  }
+  if (raw && typeof raw === "object" && (raw as { zeroReason?: unknown }).zeroReason === "none") {
+    (raw as { zeroReason: unknown }).zeroReason = null;
+  }
+  const parsed = feedbackEvaluationSchema.parse(raw);
+  const justifications = {} as Record<CompetencyNumber, string>;
+  for (const c of COMPETENCIES) {
+    const item = parsed.competencies.find((x) => x.competency === c);
+    if (!item) {
+      throw new Error(`Feedback inválido: justificativa da competência ${c} ausente`);
+    }
+    justifications[c] = item.justification;
+  }
+  return {
+    zeroReason: parsed.zeroReason,
+    justifications,
+    generalFeedback: parsed.generalFeedback,
+    annotations: parsed.annotations,
+  };
 }
 
 // Converte o texto JSON do Gemini em LlmEvaluation validado. Preserva o contrato
@@ -162,8 +305,14 @@ export function parseGeminiEvaluation(text: string): LlmEvaluation {
 }
 
 // Fake determinístico para testes e E2E — sem chamadas externas (quickstart).
+// Três filas: a compartilhada (LlmEvaluation, dirige AS DUAS chamadas do pipeline e o
+// grade() legado) e as granulares por chamada — para testar, por ex., um feedback que
+// falha sobre uma pontuação bem-sucedida (caminho degradado da spec 018).
 const globalForGrading = globalThis as unknown as {
   fakeGradingQueue?: (LlmEvaluation | Error)[];
+  fakeScoringQueue?: (ScoringResult | Error)[];
+  fakeFeedbackQueue?: (FeedbackResult | Error)[];
+  fakePendingFeedback?: LlmEvaluation[];
 };
 
 function fakeQueue(): (LlmEvaluation | Error)[] {
@@ -171,8 +320,33 @@ function fakeQueue(): (LlmEvaluation | Error)[] {
   return globalForGrading.fakeGradingQueue;
 }
 
+function fakeScoringQueue(): (ScoringResult | Error)[] {
+  globalForGrading.fakeScoringQueue ??= [];
+  return globalForGrading.fakeScoringQueue;
+}
+
+function fakeFeedbackQueue(): (FeedbackResult | Error)[] {
+  globalForGrading.fakeFeedbackQueue ??= [];
+  return globalForGrading.fakeFeedbackQueue;
+}
+
+// Quando scoreEssay() consome uma LlmEvaluation da fila compartilhada, guarda-a aqui
+// para que generateFeedback() reconstrua o feedback da MESMA avaliação.
+function pendingFeedback(): LlmEvaluation[] {
+  globalForGrading.fakePendingFeedback ??= [];
+  return globalForGrading.fakePendingFeedback;
+}
+
 export function enqueueFakeGradingResult(result: LlmEvaluation | Error) {
   fakeQueue().push(result);
+}
+
+export function enqueueFakeScoringResult(result: ScoringResult | Error) {
+  fakeScoringQueue().push(result);
+}
+
+export function enqueueFakeFeedbackResult(result: FeedbackResult | Error) {
+  fakeFeedbackQueue().push(result);
 }
 
 export function defaultFakeEvaluation(essayText: string): LlmEvaluation {
@@ -231,6 +405,37 @@ export function defaultFakeEvaluation(essayText: string): LlmEvaluation {
   };
 }
 
+// Deriva as saídas das duas chamadas a partir de uma LlmEvaluation completa (o formato
+// que enqueueFakeGradingResult usa) — mantém os testes de integração existentes válidos.
+function scoringFromEvaluation(ev: LlmEvaluation): ScoringResult {
+  const scores = {} as Record<CompetencyNumber, Score>;
+  for (const c of COMPETENCIES) {
+    scores[c] = (ev.competencies.find((x) => x.competency === c)?.score ?? 0) as Score;
+  }
+  return { annulled: ev.zeroReason !== null, scores };
+}
+
+function feedbackFromEvaluation(ev: LlmEvaluation): FeedbackResult {
+  const justifications = {} as Record<CompetencyNumber, string>;
+  for (const c of COMPETENCIES) {
+    justifications[c] = ev.competencies.find((x) => x.competency === c)?.justification ?? "";
+  }
+  return {
+    zeroReason: ev.zeroReason,
+    justifications,
+    generalFeedback: ev.generalFeedback,
+    annotations: ev.annotations,
+  };
+}
+
+export function defaultFakeScoringResult(essayText: string): ScoringResult {
+  return scoringFromEvaluation(defaultFakeEvaluation(essayText));
+}
+
+export function defaultFakeFeedbackResult(essayText: string): FeedbackResult {
+  return feedbackFromEvaluation(defaultFakeEvaluation(essayText));
+}
+
 class FakeGradingProvider implements GradingProvider {
   async grade(input: GradingInput): Promise<LlmEvaluation> {
     const queued = fakeQueue().shift();
@@ -238,6 +443,26 @@ class FakeGradingProvider implements GradingProvider {
       throw queued;
     }
     return queued ?? defaultFakeEvaluation(input.essayText);
+  }
+
+  async scoreEssay(input: GradingInput): Promise<ScoringResult> {
+    const scoped = fakeScoringQueue().shift();
+    if (scoped instanceof Error) throw scoped;
+    if (scoped) return scoped;
+    // Sem fila granular: consome a fila compartilhada e guarda a avaliação para a CHAMADA 2.
+    const shared = fakeQueue().shift();
+    if (shared instanceof Error) throw shared;
+    const ev = shared ?? defaultFakeEvaluation(input.essayText);
+    pendingFeedback().push(ev);
+    return scoringFromEvaluation(ev);
+  }
+
+  async generateFeedback(input: FeedbackInput): Promise<FeedbackResult> {
+    const scoped = fakeFeedbackQueue().shift();
+    if (scoped instanceof Error) throw scoped;
+    if (scoped) return scoped;
+    const ev = pendingFeedback().shift();
+    return ev ? feedbackFromEvaluation(ev) : defaultFakeFeedbackResult(input.essayText);
   }
 }
 

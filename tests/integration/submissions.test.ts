@@ -8,7 +8,13 @@ import {
   enqueueFakePdfResult,
   FAKE_ESSAY_TEXT,
 } from "@/modules/transcription";
-import { defaultFakeEvaluation, enqueueFakeGradingResult } from "@/modules/grading";
+import {
+  defaultFakeEvaluation,
+  defaultFakeScoringResult,
+  enqueueFakeGradingResult,
+  enqueueFakeScoringResult,
+  enqueueFakeFeedbackResult,
+} from "@/modules/grading";
 import { actAs, createUser, jsonRequest, resetDb, routeContext } from "../helpers";
 
 vi.mock("next-auth", () => ({
@@ -246,6 +252,61 @@ describe("submission lifecycle", () => {
       expect.objectContaining({ submissionId, count: 1 }),
     );
     warnSpy.mockRestore();
+  });
+
+  // US3 (spec 018): a CHAMADA 2 classifica o motivo de anulação (zeroReason 3-vias).
+  it("persists the 3-way zeroReason and zeros for an annulled essay (US3)", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    const annulled = defaultFakeEvaluation(FAKE_ESSAY_TEXT);
+    annulled.zeroReason = "theme_disconnection";
+    annulled.competencies = annulled.competencies.map((c) => ({ ...c, score: 0 as const }));
+    annulled.annotations = [];
+    enqueueFakeGradingResult(annulled);
+
+    const submissionId = await startSubmission();
+    await uploadAndExtract(submissionId);
+    await confirmRoute(
+      jsonRequest(`/api/submissions/${submissionId}/confirm`, "POST", {
+        confirmedText: FAKE_ESSAY_TEXT,
+      }),
+      routeContext({ id: submissionId }),
+    );
+    await waitForStatus(submissionId, "completed");
+
+    const evaluation = await prisma.evaluation.findFirstOrThrow({ where: { submissionId } });
+    expect(evaluation.zeroReason).toBe("theme_disconnection");
+    expect(evaluation.totalScore).toBe(0);
+    expect(evaluation.rubricVersion).toBe("2.0.0");
+    expect(evaluation.modelId).toContain("+fb:");
+  });
+
+  // US4 (spec 018): a CHAMADA 2 falha, mas as notas válidas da CHAMADA 1 são preservadas
+  // (sem reembolso), com feedback placeholder.
+  it("degrades feedback without discarding validated scores or refunding (US4)", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    // Pontuação bem-sucedida (fila granular) + feedback que falha → caminho degradado.
+    enqueueFakeScoringResult(defaultFakeScoringResult(FAKE_ESSAY_TEXT));
+    enqueueFakeFeedbackResult(new Error("feedback fora do ar"));
+
+    const submissionId = await startSubmission();
+    await uploadAndExtract(submissionId);
+    await confirmRoute(
+      jsonRequest(`/api/submissions/${submissionId}/confirm`, "POST", {
+        confirmedText: FAKE_ESSAY_TEXT,
+      }),
+      routeContext({ id: submissionId }),
+    );
+    expect((await getBalance(user.id)).freeRemaining).toBe(2);
+
+    await waitForStatus(submissionId, "completed");
+    const evaluation = await prisma.evaluation.findFirstOrThrow({ where: { submissionId } });
+    // Notas reais preservadas (default fake = 160+160+120+160+120 = 720).
+    expect(evaluation.totalScore).toBe(720);
+    expect(evaluation.generalFeedback).toContain("Não foi possível gerar o feedback");
+    // Crédito NÃO reembolsado — a submissão completou.
+    expect((await getBalance(user.id)).freeRemaining).toBe(2);
   });
 
   it("rejects a confirmed text that diverges too much from the OCR output", async () => {

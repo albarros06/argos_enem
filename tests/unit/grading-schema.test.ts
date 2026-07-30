@@ -4,7 +4,7 @@ import {
   validateEvaluationConsistency,
   type LlmEvaluation,
 } from "@/modules/grading/schema";
-import { parseGeminiEvaluation } from "@/modules/grading/llm";
+import { parseGeminiEvaluation, parseGeminiFeedback } from "@/modules/grading/llm";
 
 function validEvaluation(): LlmEvaluation {
   return {
@@ -99,5 +99,47 @@ describe("parseGeminiEvaluation (contrato Gemini/Vertex preservado)", () => {
     const invalid = validEvaluation();
     invalid.competencies[0].score = 50 as never; // fora dos passos oficiais de 40
     expect(() => parseGeminiEvaluation(JSON.stringify(invalid))).toThrow();
+  });
+});
+
+// CHAMADA 2 (spec 018): o feedback traz justificativas SEM notas + zeroReason.
+function validFeedback(zeroReason: string = "none") {
+  return {
+    zeroReason,
+    competencies: [1, 2, 3, 4, 5].map((competency) => ({
+      competency,
+      justification: `Justificativa ${competency}.`,
+    })),
+    generalFeedback: "Feedback geral.",
+    annotations: [{ competency: 1, excerpt: "trecho", issue: "problema", suggestion: "sugestão" }],
+  };
+}
+
+describe("parseGeminiFeedback (CHAMADA 2)", () => {
+  it("constrói a justificativa por competência (1 a 5) e o feedback geral", () => {
+    const feedback = parseGeminiFeedback(JSON.stringify(validFeedback()));
+    expect(Object.keys(feedback.justifications)).toHaveLength(5);
+    expect(feedback.justifications[3]).toBe("Justificativa 3.");
+    expect(feedback.generalFeedback).toBe("Feedback geral.");
+  });
+
+  it('remapeia o sentinela "none" para null', () => {
+    expect(parseGeminiFeedback(JSON.stringify(validFeedback("none"))).zeroReason).toBeNull();
+  });
+
+  it("preserva um zeroReason oficial quando a redação foi anulada", () => {
+    expect(parseGeminiFeedback(JSON.stringify(validFeedback("genre_disregard"))).zeroReason).toBe(
+      "genre_disregard",
+    );
+  });
+
+  it("lança quando falta a justificativa de uma competência", () => {
+    const missing = validFeedback();
+    missing.competencies = missing.competencies.slice(0, 4);
+    expect(() => parseGeminiFeedback(JSON.stringify(missing))).toThrow(/competência 5/);
+  });
+
+  it("lança para JSON inválido", () => {
+    expect(() => parseGeminiFeedback("{not json")).toThrow(/JSON válido/);
   });
 });

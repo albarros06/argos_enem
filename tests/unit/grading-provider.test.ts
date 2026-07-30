@@ -77,4 +77,27 @@ describe("gradingProvider (offline)", () => {
     expect(result.competencies).toHaveLength(5);
     expect(result.zeroReason).toBeNull();
   });
+
+  // Pipeline de duas chamadas (spec 018): o fake serve as duas chamadas.
+  it("scoreEssay devolve 5 notas válidas e a flag de anulação", async () => {
+    const result = await gradingProvider().scoreEssay({
+      theme: "Tema de teste",
+      essayText: "Um texto de redação qualquer para pontuação determinística.",
+    });
+    expect(result.annulled).toBe(false);
+    expect(Object.keys(result.scores)).toHaveLength(5);
+    expect([0, 40, 80, 120, 160, 200]).toContain(result.scores[1]);
+  });
+
+  it("generateFeedback devolve justificativa por competência e feedback geral", async () => {
+    const result = await gradingProvider().generateFeedback({
+      theme: "Tema de teste",
+      essayText: "Um texto de redação qualquer para feedback determinístico.",
+      scores: { 1: 160, 2: 160, 3: 120, 4: 160, 5: 120 },
+      annulled: false,
+    });
+    expect(Object.keys(result.justifications)).toHaveLength(5);
+    expect(result.generalFeedback).toBeTruthy();
+    expect(result.zeroReason).toBeNull();
+  });
 });

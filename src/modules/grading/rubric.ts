@@ -1,7 +1,13 @@
 // Rubrica oficial do ENEM condensada a partir da "Cartilha do Participante" (INEP).
 // Versionada: toda alteração neste prompt exige bump de RUBRIC_VERSION (R9), pois
 // Evaluation.rubricVersion mantém interpretáveis as notas históricas.
-export const RUBRIC_VERSION = "1.0.0";
+//
+// 2.0.0 (spec 018): a correção de produção deixou de ser uma única chamada com esta
+// rubrica e passou ao pipeline de DUAS chamadas — pontuação via prompt v5_calibrated
+// (scoringPrompt.ts) + feedback via feedbackPrompt.ts. Este RUBRIC_SYSTEM_PROMPT
+// permanece apenas como caminho legado (scripts/harness); a semântica de nota mudou,
+// daí o bump MAJOR.
+export const RUBRIC_VERSION = "2.0.0";
 
 export const RUBRIC_SYSTEM_PROMPT = `Você é um corretor oficial de redações do ENEM, treinado pelo INEP. Sua tarefa é avaliar redações dissertativo-argumentativas em língua portuguesa, estritamente segundo as 5 competências oficiais do ENEM. Você recebe o tema proposto e o texto transcrito da redação manuscrita do participante.
 

@@ -5,14 +5,30 @@ import { scheduleBackgroundTask } from "@/lib/background";
 import { countEssayLines } from "@/lib/text";
 import { refundCredit } from "@/modules/credits";
 import { deleteEntry } from "@/modules/weekly";
-import { gradingProvider } from "./llm";
-import { llmEvaluationSchema, validateEvaluationConsistency, type LlmEvaluation } from "./schema";
+import { gradingProvider, type FeedbackInput, type GradingProvider } from "./llm";
+import {
+  validateEvaluationConsistency,
+  type CompetencyNumber,
+  type FeedbackResult,
+  type LlmEvaluation,
+  type ScoringResult,
+} from "./schema";
 import { anchorAnnotations } from "./anchoring";
 import { RUBRIC_VERSION } from "./rubric";
 
-export { enqueueFakeGradingResult, defaultFakeEvaluation } from "./llm";
+export {
+  enqueueFakeGradingResult,
+  enqueueFakeScoringResult,
+  enqueueFakeFeedbackResult,
+  defaultFakeEvaluation,
+  defaultFakeScoringResult,
+  defaultFakeFeedbackResult,
+} from "./llm";
 export { anchorAnnotations } from "./anchoring";
-export { llmEvaluationSchema, validateEvaluationConsistency, RUBRIC_VERSION };
+export { llmEvaluationSchema } from "./schema";
+export { validateEvaluationConsistency, RUBRIC_VERSION };
+
+const COMPETENCIES: CompetencyNumber[] = [1, 2, 3, 4, 5];
 
 // Dispara a correção fora do request. after() (via scheduleBackgroundTask) mantém
 // a função viva na Vercel até terminar; falhas são tratadas em evaluateSubmission.
@@ -42,11 +58,7 @@ export async function evaluateSubmission(submissionId: string): Promise<void> {
       // Condição de zero detectável em código — não gasta chamada de LLM (R9).
       evaluation = insufficientTextEvaluation();
     } else {
-      const raw = await gradingProvider().grade({
-        theme: submission.themeText,
-        essayText: confirmedText,
-      });
-      evaluation = validateEvaluationConsistency(llmEvaluationSchema.parse(raw));
+      evaluation = await gradeInTwoCalls(submission.themeText, confirmedText);
     }
 
     const anchored = anchorAnnotations(confirmedText, evaluation.annotations);
@@ -73,7 +85,7 @@ export async function evaluateSubmission(submissionId: string): Promise<void> {
           generalFeedback: evaluation.generalFeedback,
           zeroReason: evaluation.zeroReason,
           rubricVersion: RUBRIC_VERSION,
-          modelId: business.gradingModelId,
+          modelId: `score:${business.gradingModelId}+fb:${business.feedbackModelId}`,
           annotations: {
             create: anchored.map((annotation) => ({
               competency: annotation.competency,
@@ -112,6 +124,73 @@ async function failSubmission(submissionId: string, userId: string): Promise<voi
   });
   await refundCredit(userId, submissionId);
   await deleteEntry(submissionId);
+}
+
+// Pipeline de duas chamadas (spec 018). A CHAMADA 1 (pontuação) é autoritativa quanto às
+// notas e à anulação; a CHAMADA 2 (feedback) explica as notas e classifica o motivo de
+// anulação. Uma falha na CHAMADA 1 propaga (o chamador reembolsa e marca failed); uma
+// falha na CHAMADA 2 degrada para feedback placeholder — nunca descarta notas válidas.
+async function gradeInTwoCalls(theme: string, essayText: string): Promise<LlmEvaluation> {
+  const provider = gradingProvider();
+  const scoring = await provider.scoreEssay({ theme, essayText });
+  const feedback = await feedbackWithFallback(
+    provider,
+    { theme, essayText, scores: scoring.scores, annulled: scoring.annulled },
+    scoring,
+  );
+  return mergeEvaluation(scoring, feedback);
+}
+
+async function feedbackWithFallback(
+  provider: GradingProvider,
+  input: FeedbackInput,
+  scoring: ScoringResult,
+): Promise<FeedbackResult> {
+  try {
+    return await provider.generateFeedback(input);
+  } catch (error) {
+    // A CHAMADA 2 já tem retry interno (withRetry) para rate-limit; qualquer falha aqui é
+    // definitiva — degrada sem descartar as notas válidas nem reembolsar (FR-016).
+    logger.warn("feedback_degraded", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return degradedFeedback(scoring);
+  }
+}
+
+function mergeEvaluation(scoring: ScoringResult, feedback: FeedbackResult): LlmEvaluation {
+  // A anulação é decidida pela CHAMADA 1; o zeroReason vem da classificação da CHAMADA 2,
+  // com default documentado (theme_disconnection) quando anulada sem classificação válida.
+  const zeroReason = scoring.annulled ? (feedback.zeroReason ?? "theme_disconnection") : null;
+  const competencies = COMPETENCIES.map((competency) => ({
+    competency,
+    score: scoring.scores[competency],
+    justification: feedback.justifications[competency],
+  }));
+  return validateEvaluationConsistency({
+    zeroReason,
+    competencies,
+    generalFeedback: feedback.generalFeedback,
+    annotations: feedback.annotations,
+  });
+}
+
+// Feedback degradado (spec 018 FR-016): a CHAMADA 2 falhou após os retries. Preserva as
+// notas válidas com justificativas placeholder e o default de anulação documentado.
+function degradedFeedback(scoring: ScoringResult): FeedbackResult {
+  const placeholder =
+    "Justificativa detalhada indisponível para esta correção; a nota da competência é definitiva.";
+  const justifications = {} as Record<CompetencyNumber, string>;
+  for (const competency of COMPETENCIES) {
+    justifications[competency] = placeholder;
+  }
+  return {
+    zeroReason: scoring.annulled ? "theme_disconnection" : null,
+    justifications,
+    generalFeedback:
+      "Não foi possível gerar o feedback detalhado automático desta correção. As notas por competência acima são definitivas.",
+    annotations: [],
+  };
 }
 
 function insufficientTextEvaluation(): LlmEvaluation {

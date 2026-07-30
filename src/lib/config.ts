@@ -43,7 +43,12 @@ export const business = {
   gracePeriodDays: intFromEnv("GRACE_PERIOD_DAYS", 7),
   abandonedSweepHours: intFromEnv("ABANDONED_SWEEP_HOURS", 24),
   // Provider é selecionado pelo prefixo do id (gemini-* -> Gemini, claude-* -> Anthropic).
-  gradingModelId: process.env.GRADING_MODEL_ID ?? "gemini-3.1-pro-preview",
+  // Pipeline de correção em duas chamadas (spec 018): a CHAMADA 1 (pontuação) roda o
+  // prompt v5_calibrated com pensamento dinâmico e é a que decide as 5 notas — validada
+  // em gemini-2.5-flash (QWK global 0.541). A CHAMADA 2 (feedback) só explica as notas já
+  // fixadas, então roda no modelo mais barato.
+  gradingModelId: process.env.GRADING_MODEL_ID ?? "gemini-2.5-flash",
+  feedbackModelId: process.env.FEEDBACK_MODEL_ID ?? "gemini-2.5-flash-lite",
   // OCR de imagens: gemini-* usa transcrição por LLM (ignora linhas/numeração do
   // papel); qualquer outro valor (ex.: "google-vision") mantém o Vision. PDFs
   // continuam sempre no Vision (batchAnnotateFiles) por causa da contagem de páginas.
@@ -52,9 +57,12 @@ export const business = {
   // usado aqui com segurança (ex.: IMAGE_OCR_MODEL_ID=gemini-3-flash-preview).
   imageOcrModelId: process.env.IMAGE_OCR_MODEL_ID ?? "google-vision",
   imageOcrMaxOutputTokens: intFromEnv("IMAGE_OCR_MAX_OUTPUT_TOKENS", 4096),
-  // Teto de saída do grading. Modelos com "thinking" (Gemini 3) consomem parte do
-  // orçamento pensando; suba este valor se vir respostas vazias/truncadas.
-  gradingMaxOutputTokens: intFromEnv("GRADING_MAX_OUTPUT_TOKENS", 8192),
+  // Teto de saída da CHAMADA 1 (pontuação). O pensamento dinâmico compartilha esse
+  // orçamento; 32768 é obrigatório — a validação v5 perdeu redações por truncamento do
+  // bloco de notas em 8192 (ver spec 018 / grader.py:75). Não reduza sem revalidar QWK.
+  gradingMaxOutputTokens: intFromEnv("GRADING_MAX_OUTPUT_TOKENS", 32768),
+  // Teto de saída da CHAMADA 2 (feedback). Sem pensamento; só JSON de justificativas.
+  feedbackMaxOutputTokens: intFromEnv("FEEDBACK_MAX_OUTPUT_TOKENS", 2048),
   allowedUploadTypes: ["image/jpeg", "image/png", "application/pdf"],
   verificationTokenTtlHours: 24,
   resetTokenTtlHours: 2,
