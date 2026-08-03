@@ -27,7 +27,7 @@ describe("auth flow", () => {
 
     const created = await prisma.user.findUniqueOrThrow({ where: { email: "ana@teste.com" } });
     expect(created.emailVerifiedAt).toBeNull(); // submissão bloqueada até verificar (FR-001)
-    expect((await getBalance(created.id)).freeRemaining).toBe(3); // FR-019
+    expect((await getBalance(created.id)).freeRemaining).toBe(1); // FR-019
 
     await verifyEmail(lastTokenFor("ana@teste.com"));
     const verified = await prisma.user.findUniqueOrThrow({ where: { email: "ana@teste.com" } });

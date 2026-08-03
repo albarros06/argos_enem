@@ -34,7 +34,9 @@ export type Env = z.infer<typeof envSchema>;
 
 // Business levers, env-overridable without a deploy (R11). Plan prices/quotas are seed data.
 export const business = {
-  freeSignupCredits: intFromEnv("FREE_SIGNUP_CREDITS", 3),
+  // Um crédito gratuito por mês-calendário para o tier free (não cumulativo —
+  // ver ensureFreeMonthlyCredit em modules/credits).
+  freeMonthlyCredits: intFromEnv("FREE_MONTHLY_CREDITS", 1),
   ocrMinMeanConfidence: floatFromEnv("OCR_MIN_MEAN_CONFIDENCE", 0.6),
   minEssayLines: intFromEnv("MIN_ESSAY_LINES", 7),
   maxUploadBytes: intFromEnv("MAX_UPLOAD_BYTES", 10 * 1024 * 1024),

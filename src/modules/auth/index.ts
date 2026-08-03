@@ -6,7 +6,7 @@ import { ApiError } from "@/lib/api";
 import { business } from "@/lib/config";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
-import { grantSignupCredits } from "@/modules/credits";
+import { ensureFreeMonthlyCredit } from "@/modules/credits";
 import { consumeToken, issueToken } from "./tokens";
 
 // Política de senha (SEC-007): mínimo de 10 caracteres e rejeição de padrões
@@ -36,7 +36,7 @@ export async function registerUser(input: z.infer<typeof registerSchema>) {
   try {
     user = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({ data: { name, email, passwordHash } });
-      await grantSignupCredits(created.id, tx);
+      await ensureFreeMonthlyCredit(created.id, tx);
       return created;
     });
   } catch (error) {
