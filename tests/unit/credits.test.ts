@@ -6,6 +6,7 @@ import {
   expireQuota,
   freeCycleId,
   getBalance,
+  grantManualCredits,
   grantQuota,
   InsufficientCreditsError,
   refundCredit,
@@ -155,5 +156,35 @@ describe("credits ledger", () => {
   it("freeCycleId scopes to the calendar year-month in UTC", () => {
     expect(freeCycleId(new Date("2026-01-31T23:59:59.999Z"))).toBe("free:2026-01");
     expect(freeCycleId(new Date("2026-02-01T00:00:00.000Z"))).toBe("free:2026-02");
+  });
+
+  it("manual grants add on top of the monthly free credit and never expire across months", async () => {
+    const user = await createUser();
+    await grantManualCredits(user.id, 5);
+
+    expect((await getBalance(user.id)).freeRemaining).toBe(6); // 1 monthly + 5 manual
+
+    // Simula a virada de mês: só o crédito mensal fica preso ao mês antigo.
+    await prisma.creditTransaction.updateMany({
+      where: { userId: user.id, kind: "monthly_free_grant" },
+      data: { cycleId: "free:2000-01" },
+    });
+
+    // 5 manual (sobrevive à virada) + 1 novo crédito mensal do ciclo atual.
+    expect((await getBalance(user.id)).freeRemaining).toBe(6);
+  });
+
+  it("consumes the expiring monthly credit before the non-expiring manual pool", async () => {
+    const user = await createUser();
+    await grantManualCredits(user.id, 2);
+    const submission = await createSubmissionRow(user.id);
+
+    await consumeCredit(user.id, submission.id);
+
+    const consume = await prisma.creditTransaction.findFirstOrThrow({
+      where: { userId: user.id, kind: "consume", submissionId: submission.id },
+    });
+    expect(consume.cycleId).toBe(freeCycleId()); // gastou o crédito do mês, não o manual
+    expect((await getBalance(user.id)).freeRemaining).toBe(2); // manual intacto
   });
 });

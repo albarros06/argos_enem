@@ -48,14 +48,23 @@ export async function ensureFreeMonthlyCredit(userId: string, db: Db = prisma) {
   });
 }
 
-// Concessão manual (operacional/admin): soma direto no freeRemaining do mês
-// corrente. Registrado com kind próprio para auditoria.
+// Ciclo fixo (não muda de mês a mês) para créditos manuais — ao contrário do
+// crédito grátis mensal, concessões manuais não expiram (FR original de
+// grantManualCredits). Fica isolado do freeCycleId() de propósito: se
+// reaproveitássemos o mesmo cycleId do mês, o consumo desse crédito seria
+// zerado na virada do mês junto com o crédito mensal, devolvendo saldo
+// manual já gasto.
+const MANUAL_CYCLE_ID = "manual";
+
+// Concessão manual (operacional/admin): crédito livre, sem ciclo mensal, que
+// não expira — soma direto no freeRemaining. Registrado com kind próprio
+// para auditoria.
 export async function grantManualCredits(userId: string, amount: number, db: Db = prisma) {
   if (!Number.isInteger(amount) || amount <= 0) {
     throw new Error(`Quantidade de créditos inválida: ${amount} (esperado inteiro positivo)`);
   }
   await db.creditTransaction.create({
-    data: { userId, amount, kind: "manual_grant", cycleId: freeCycleId() },
+    data: { userId, amount, kind: "manual_grant", cycleId: MANUAL_CYCLE_ID },
   });
 }
 
@@ -83,23 +92,33 @@ export async function getBalance(userId: string): Promise<CreditBalance> {
   });
 }
 
-// Consumes one credit atomically — quota first, then free (data-model rule).
+// Consumes one credit atomically — quota first, then the monthly free grant,
+// then the (non-expiring) manual grant pool last, so the credit that would
+// otherwise be lost at month-end is spent before the one that never expires.
 // The per-user advisory lock serializes concurrent submissions.
 export async function consumeCredit(userId: string, submissionId: string) {
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}))`;
     await ensureFreeMonthlyCredit(userId, tx);
-    const balance = await computeBalance(tx, userId);
-    if (balance.quotaRemaining > 0) {
-      const cycle = await currentCycle(tx, userId);
+    const cycle = await currentCycle(tx, userId);
+    const quotaRemaining = cycle ? await sumLedger(tx, userId, cycle.cycleId) : 0;
+    if (quotaRemaining > 0) {
       await tx.creditTransaction.create({
         data: { userId, amount: -1, kind: "consume", submissionId, cycleId: cycle?.cycleId },
       });
       return { from: "quota" as const };
     }
-    if (balance.freeRemaining > 0) {
+    const monthlyFreeRemaining = await sumLedger(tx, userId, freeCycleId());
+    if (monthlyFreeRemaining > 0) {
       await tx.creditTransaction.create({
         data: { userId, amount: -1, kind: "consume", submissionId, cycleId: freeCycleId() },
+      });
+      return { from: "free" as const };
+    }
+    const manualRemaining = await sumLedger(tx, userId, MANUAL_CYCLE_ID);
+    if (manualRemaining > 0) {
+      await tx.creditTransaction.create({
+        data: { userId, amount: -1, kind: "consume", submissionId, cycleId: MANUAL_CYCLE_ID },
       });
       return { from: "free" as const };
     }
@@ -145,9 +164,10 @@ async function currentCycle(db: Db, userId: string) {
 
 async function computeBalance(db: Db, userId: string): Promise<CreditBalance> {
   const cycle = await currentCycle(db, userId);
-  const freeRemaining = await sumLedger(db, userId, freeCycleId());
+  const monthlyFree = await sumLedger(db, userId, freeCycleId());
+  const manualFree = await sumLedger(db, userId, MANUAL_CYCLE_ID);
   const quotaRemaining = cycle ? await sumLedger(db, userId, cycle.cycleId) : 0;
-  return { freeRemaining, quotaRemaining, cycleEndsAt: cycle?.endsAt ?? null };
+  return { freeRemaining: monthlyFree + manualFree, quotaRemaining, cycleEndsAt: cycle?.endsAt ?? null };
 }
 
 async function sumLedger(db: Db, userId: string, cycleId: string | null): Promise<number> {
