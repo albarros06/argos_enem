@@ -155,6 +155,7 @@ model Annotation {
 
 enum CreditKind {
   signup_grant
+  monthly_free_grant
   quota_grant
   consume
   refund

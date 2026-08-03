@@ -142,7 +142,7 @@ describe("submission lifecycle", () => {
     expect(confirm.status).toBe(200);
 
     // Crédito consumido na confirmação (clarificação 1) e imagem apagada (FR-027a).
-    expect((await getBalance(user.id)).freeRemaining).toBe(2);
+    expect((await getBalance(user.id)).freeRemaining).toBe(0);
     const afterConfirm = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
     expect(afterConfirm.imageKey).toBeNull();
 
@@ -172,7 +172,7 @@ describe("submission lifecycle", () => {
 
     expect(uploaded.status).toBe("failed");
     expect(uploaded.failureReason).toBe("extraction_failed");
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
     const submission = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
     expect(submission.imageKey).toBeNull();
   });
@@ -187,7 +187,7 @@ describe("submission lifecycle", () => {
 
     expect(uploaded.status).toBe("failed");
     expect(uploaded.failureReason).toBe("extraction_failed");
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
   });
 
   it("too-short extracted text fails as insufficient_text", async () => {
@@ -215,7 +215,7 @@ describe("submission lifecycle", () => {
       }),
       routeContext({ id: submissionId }),
     );
-    expect((await getBalance(user.id)).freeRemaining).toBe(2);
+    expect((await getBalance(user.id)).freeRemaining).toBe(0);
 
     await waitForStatus(submissionId, "failed");
     const submission = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
@@ -223,7 +223,7 @@ describe("submission lifecycle", () => {
     // O reembolso é gravado logo após a troca de status — aguarda o ledger.
     await vi.waitFor(
       async () => {
-        expect((await getBalance(user.id)).freeRemaining).toBe(3);
+        expect((await getBalance(user.id)).freeRemaining).toBe(1);
       },
       { timeout: 5_000, interval: 100 },
     );
@@ -298,7 +298,7 @@ describe("submission lifecycle", () => {
       }),
       routeContext({ id: submissionId }),
     );
-    expect((await getBalance(user.id)).freeRemaining).toBe(2);
+    expect((await getBalance(user.id)).freeRemaining).toBe(0);
 
     await waitForStatus(submissionId, "completed");
     const evaluation = await prisma.evaluation.findFirstOrThrow({ where: { submissionId } });
@@ -306,7 +306,7 @@ describe("submission lifecycle", () => {
     expect(evaluation.totalScore).toBe(720);
     expect(evaluation.generalFeedback).toContain("Não foi possível gerar o feedback");
     // Crédito NÃO reembolsado — a submissão completou.
-    expect((await getBalance(user.id)).freeRemaining).toBe(2);
+    expect((await getBalance(user.id)).freeRemaining).toBe(0);
   });
 
   it("rejects a confirmed text that diverges too much from the OCR output", async () => {
@@ -359,7 +359,7 @@ describe("submission lifecycle", () => {
     expect(submission.status).toBe("expired");
     expect(submission.imageKey).toBeNull();
     expect(fakeStorageHas(imageKey!)).toBe(false);
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
   });
 
   it("duplicate image upload returns 409 unless forced", async () => {
@@ -457,7 +457,7 @@ describe("async transcription", () => {
     const submission = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
     expect(submission.failureReason).toBe("extraction_failed");
     expect(submission.imageKey).toBeNull();
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
   });
 });
 
@@ -507,7 +507,7 @@ describe("PDF submission", () => {
     expect(uploaded.status).toBe("failed");
     expect(uploaded.failureReason).toBe("multi_page_pdf");
     // Crédito só é consumido na confirmação, que uma submissão failed nunca alcança (FR-007).
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
     const submission = await prisma.submission.findUniqueOrThrow({ where: { id: submissionId } });
     expect(submission.imageKey).toBeNull();
     expect(fakeStorageHas(imageKey!)).toBe(false);
@@ -523,7 +523,7 @@ describe("PDF submission", () => {
 
     expect(uploaded.status).toBe("failed");
     expect(uploaded.failureReason).toBe("extraction_failed");
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
   });
 
   it("rejects an oversized PDF and flags a duplicate PDF (US3, FR-004/FR-005)", async () => {

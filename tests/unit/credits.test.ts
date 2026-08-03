@@ -4,6 +4,7 @@ import {
   consumeCredit,
   cycleIdFor,
   expireQuota,
+  freeCycleId,
   getBalance,
   grantQuota,
   InsufficientCreditsError,
@@ -32,12 +33,17 @@ async function userWithActiveSubscription(quota: number) {
 describe("credits ledger", () => {
   beforeEach(resetDb);
 
-  it("grants 3 free credits at signup", async () => {
+  it("grants 1 free credit at signup, scoped to the current calendar month", async () => {
     const user = await createUser();
     const balance = await getBalance(user.id);
-    expect(balance.freeRemaining).toBe(3);
+    expect(balance.freeRemaining).toBe(1);
     expect(balance.quotaRemaining).toBe(0);
     expect(balance.cycleEndsAt).toBeNull();
+
+    const grant = await prisma.creditTransaction.findFirst({
+      where: { userId: user.id, kind: "monthly_free_grant" },
+    });
+    expect(grant?.cycleId).toBe(freeCycleId());
   });
 
   it("consumes quota credits before free credits", async () => {
@@ -49,7 +55,7 @@ describe("credits ledger", () => {
 
     const balance = await getBalance(user.id);
     expect(balance.quotaRemaining).toBe(1);
-    expect(balance.freeRemaining).toBe(3);
+    expect(balance.freeRemaining).toBe(1);
   });
 
   it("falls back to free credits when quota is exhausted", async () => {
@@ -63,13 +69,13 @@ describe("credits ledger", () => {
 
     const balance = await getBalance(user.id);
     expect(balance.quotaRemaining).toBe(0);
-    expect(balance.freeRemaining).toBe(2);
+    expect(balance.freeRemaining).toBe(0);
   });
 
   it("never over-consumes under concurrency", async () => {
-    const user = await createUser(); // 3 créditos grátis
+    const user = await createUser(); // 1 crédito grátis do mês
     const submissions = await Promise.all(
-      Array.from({ length: 6 }, () => createSubmissionRow(user.id)),
+      Array.from({ length: 4 }, () => createSubmissionRow(user.id)),
     );
 
     const outcomes = await Promise.allSettled(
@@ -78,7 +84,7 @@ describe("credits ledger", () => {
     const fulfilled = outcomes.filter((outcome) => outcome.status === "fulfilled");
     const rejected = outcomes.filter((outcome) => outcome.status === "rejected");
 
-    expect(fulfilled).toHaveLength(3);
+    expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(3);
     for (const outcome of rejected) {
       expect((outcome as PromiseRejectedResult).reason).toBeInstanceOf(InsufficientCreditsError);
@@ -90,18 +96,18 @@ describe("credits ledger", () => {
     const user = await createUser();
     const submission = await createSubmissionRow(user.id);
     await consumeCredit(user.id, submission.id);
-    expect((await getBalance(user.id)).freeRemaining).toBe(2);
+    expect((await getBalance(user.id)).freeRemaining).toBe(0);
 
     await refundCredit(user.id, submission.id);
     await refundCredit(user.id, submission.id); // repetido — idempotente
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
   });
 
   it("ignores refund without a matching consume", async () => {
     const user = await createUser();
     const submission = await createSubmissionRow(user.id);
     await refundCredit(user.id, submission.id);
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
   });
 
   it("nets unused quota to zero at cycle expiry without touching free credits", async () => {
@@ -116,6 +122,38 @@ describe("credits ledger", () => {
       where: { userId: user.id, cycleId },
     });
     expect(cycleSum._sum.amount).toBe(0);
-    expect((await getBalance(user.id)).freeRemaining).toBe(3);
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
+  });
+
+  it("does not carry over free-credit usage from a previous calendar month", async () => {
+    const user = await createUser();
+    // Simula um mês anterior totalmente consumido — não deve afetar o mês corrente.
+    const pastCycleId = "free:2020-01";
+    await prisma.creditTransaction.createMany({
+      data: [
+        { userId: user.id, amount: 1, kind: "monthly_free_grant", cycleId: pastCycleId },
+        { userId: user.id, amount: -1, kind: "consume", cycleId: pastCycleId },
+      ],
+    });
+
+    expect((await getBalance(user.id)).freeRemaining).toBe(1);
+  });
+
+  it("does not double-grant the monthly credit on repeated balance checks", async () => {
+    const user = await createUser();
+    await getBalance(user.id);
+    await getBalance(user.id);
+    const balance = await getBalance(user.id);
+    expect(balance.freeRemaining).toBe(1);
+
+    const grants = await prisma.creditTransaction.count({
+      where: { userId: user.id, kind: "monthly_free_grant" },
+    });
+    expect(grants).toBe(1);
+  });
+
+  it("freeCycleId scopes to the calendar year-month in UTC", () => {
+    expect(freeCycleId(new Date("2026-01-31T23:59:59.999Z"))).toBe("free:2026-01");
+    expect(freeCycleId(new Date("2026-02-01T00:00:00.000Z"))).toBe("free:2026-02");
   });
 });

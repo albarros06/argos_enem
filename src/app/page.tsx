@@ -40,7 +40,7 @@ export default function HomePage() {
             Fotografe sua redação manuscrita e receba uma avaliação alinhada às 5 competências
             oficiais: nota total, nota por competência, anotações no texto e comentário geral.
           </p>
-          <span className={styles.freeBadge}>Suas 3 primeiras correções são gratuitas</span>
+          <span className={styles.freeBadge}>1 correção gratuita todo mês</span>
           <div className={styles.actions}>
             <Link href="/register">
               <Button variant="primary" size="lg">

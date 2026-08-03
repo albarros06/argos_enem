@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { prisma } from "@/lib/prisma";
 import { consumeCredit } from "@/modules/credits";
 import {
   actAs,
@@ -30,24 +31,22 @@ import { GET as dashboardRoute } from "@/app/api/dashboard/route";
 import { GET as listSubmissionsRoute } from "@/app/api/submissions/route";
 
 async function exhaustFreeCredits(userId: string) {
-  for (let i = 0; i < 3; i++) {
-    const submission = await createSubmissionRow(userId);
-    await consumeCredit(userId, submission.id);
-  }
+  const submission = await createSubmissionRow(userId);
+  await consumeCredit(userId, submission.id);
 }
 
 describe("free allowance and paywall", () => {
   beforeEach(resetDb);
 
-  it("a new account starts with 3 free credits visible in /api/credits", async () => {
+  it("a new account starts with 1 free credit visible in /api/credits", async () => {
     const user = await createUser();
     actAs(user.id);
 
     const response = await creditsRoute(jsonRequest("/api/credits", "GET"), routeContext({}));
-    expect(await response.json()).toMatchObject({ freeRemaining: 3, quotaRemaining: 0 });
+    expect(await response.json()).toMatchObject({ freeRemaining: 1, quotaRemaining: 0 });
   });
 
-  it("balance reaches zero after the third consumption", async () => {
+  it("balance reaches zero after consuming the month's free credit", async () => {
     const user = await createUser();
     actAs(user.id);
     await exhaustFreeCredits(user.id);
@@ -99,6 +98,25 @@ describe("free allowance and paywall", () => {
       routeContext({}),
     );
     expect(list.status).toBe(200);
-    expect((await list.json()).total).toBe(3);
+    expect((await list.json()).total).toBe(1);
+  });
+
+  it("grants a new free credit on the next calendar month", async () => {
+    const user = await createUser();
+    actAs(user.id);
+    await exhaustFreeCredits(user.id);
+
+    let response = await creditsRoute(jsonRequest("/api/credits", "GET"), routeContext({}));
+    expect(await response.json()).toMatchObject({ freeRemaining: 0 });
+
+    // Simula a virada de mês diretamente no ledger, sem mockar o relógio do
+    // processo (evita interferir com timers do driver do Postgres).
+    await prisma.creditTransaction.updateMany({
+      where: { userId: user.id },
+      data: { cycleId: "free:2000-01" },
+    });
+
+    response = await creditsRoute(jsonRequest("/api/credits", "GET"), routeContext({}));
+    expect(await response.json()).toMatchObject({ freeRemaining: 1 });
   });
 });
