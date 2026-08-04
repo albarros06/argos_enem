@@ -22,8 +22,8 @@ const { prisma } = require("../src/lib/prisma") as typeof import("../src/lib/pri
 // Uso:
 //   npx tsx scripts/migrate-plan-pricing.ts
 const NEW_PLANS = [
-  { tier: "entry" as const, name: "Plano Essencial", priceCents: 2990, monthlyQuota: 4 },
-  { tier: "premium" as const, name: "Plano Premium", priceCents: 3990, monthlyQuota: 12 },
+  { tier: "entry" as const, name: "Plano Essencial", priceCents: 1990, monthlyQuota: 4 },
+  { tier: "premium" as const, name: "Plano Premium", priceCents: 2990, monthlyQuota: 12 },
 ];
 
 async function main() {
