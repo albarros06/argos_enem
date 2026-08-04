@@ -27,3 +27,32 @@ and `specs/001-enem-essay-grading/stack.md`; API in `contracts/api.md`.
 Project principles: `.specify/memory/constitution.md`.
 
 <!-- SPECKIT END -->
+
+## Pending follow-up: subscription price migration not yet applied to production
+
+Commit `9d5a109` (2026-08-04) changed subscription pricing in code:
+`prisma/seed.ts` and `scripts/migrate-plan-pricing.ts` now define entry at
+R$19,90 (was R$29,90) and premium at R$29,90 (was R$39,90). This was pushed
+directly to `main` and deployed, but **the production database still has the
+old prices** — the preview/production UI reads `SubscriptionPlan` rows from
+the DB, and neither the Vercel build (`prisma migrate deploy` only applies
+schema migrations, not data) nor this session touched them.
+
+To finish the rollout, someone with real `DATABASE_URL` access must run:
+
+```
+npx tsx scripts/migrate-plan-pricing.ts
+```
+
+This deactivates the current active `entry`/`premium` plans and creates new
+ones at the updated price; existing subscribers keep their current
+plan/price until they resubscribe or switch (same behavior as the prior
+pricing change in #32).
+
+**Why this wasn't done automatically**: `DATABASE_URL` and `DIRECT_URL` are
+marked *Sensitive* in this Vercel project, so `vercel env pull` returns them
+redacted (`"[SENSITIVE]"`) even to an authenticated CLI session — there is no
+way to read the real connection string through Vercel from an agent session.
+The migration needs to be run from an environment that already has the real
+credential (e.g. a local `.env`, or a human running `vercel env pull`
+themselves).
