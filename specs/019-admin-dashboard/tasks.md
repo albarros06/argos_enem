@@ -33,10 +33,10 @@ Single Next.js web app. New module in `src/modules/admin/`; pages in
 
 **Purpose**: Add the one new persisted entity this feature needs.
 
-- [ ] T001 Add `AdminActionType` enum, `AdminActionLog` model, and the two back-relations
+- [X] T001 Add `AdminActionType` enum, `AdminActionLog` model, and the two back-relations
       (`adminActionsPerformed`, `adminActionsReceived`) on `User` to `prisma/schema.prisma`,
       per `data-model.md`.
-- [ ] T002 Run `npx prisma migrate dev --name admin_action_log` to generate and apply the
+- [X] T002 Run `npx prisma migrate dev --name admin_action_log` to generate and apply the
       migration and regenerate the Prisma client.
 
 ---
@@ -48,13 +48,13 @@ public-export barrel.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 [P] Implement `src/modules/admin/auditLog.ts`: `recordAdminAction(adminId,
+- [X] T003 [P] Implement `src/modules/admin/auditLog.ts`: `recordAdminAction(adminId,
       action, targetUserId, amount, reason)` and `listActionsForUser(targetUserId)`, per
       `data-model.md`'s `AdminActionLog`.
-- [ ] T004 [P] Unit tests for `auditLog.ts` in `tests/unit/admin/auditLog.test.ts`: record
+- [X] T004 [P] Unit tests for `auditLog.ts` in `tests/unit/admin/auditLog.test.ts`: record
       then list returns the entry with the correct fields; `listActionsForUser` on a user
       with no actions returns an empty array.
-- [ ] T005 Create `src/modules/admin/index.ts` as the module's public-export barrel,
+- [X] T005 Create `src/modules/admin/index.ts` as the module's public-export barrel,
       exporting `recordAdminAction`/`listActionsForUser` to start (each story below adds
       its own exports here).
 
@@ -73,43 +73,43 @@ what a direct database query would show.
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Unit tests for `searchUsers()` in `tests/unit/admin/search.test.ts`:
+- [X] T006 [P] [US1] Unit tests for `searchUsers()` in `tests/unit/admin/search.test.ts`:
       exact-email match, partial case-insensitive match, result cap at 20, excludes
       soft-deleted (`deletedAt` set) users, empty query returns no results.
-- [ ] T007 [P] [US1] Unit tests for `getUserDetail()` in `tests/unit/admin/userDetail.test.ts`:
+- [X] T007 [P] [US1] Unit tests for `getUserDetail()` in `tests/unit/admin/userDetail.test.ts`:
       full shape for a user with submissions/credits/subscription; empty-state shape
       (`submissions: []`, `subscription: null`) for a fresh user; includes `auditHistory`
       (empty for a user with no admin actions yet); returns `null` for an unknown or
       soft-deleted id.
-- [ ] T008 [P] [US1] Integration test for the search → detail flow in
+- [X] T008 [P] [US1] Integration test for the search → detail flow in
       `tests/integration/admin-dashboard.test.ts`: seed a user with a submission +
       evaluation + credit transaction, call `searchUsers`/`getUserDetail`, assert the
       returned data matches the seed.
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Implement `searchUsers(query)` in `src/modules/admin/search.ts`
+- [X] T009 [P] [US1] Implement `searchUsers(query)` in `src/modules/admin/search.ts`
       (case-insensitive `contains` on `email`, `deletedAt: null`, `take: 20`).
-- [ ] T010 [P] [US1] Implement `getUserDetail(userId)` in `src/modules/admin/userDetail.ts`:
+- [X] T010 [P] [US1] Implement `getUserDetail(userId)` in `src/modules/admin/userDetail.ts`:
       submissions (theme/status/score/date) via `Submission` ⋈ `Evaluation`, `creditBalance`
       via `credits.getBalance`, `creditTransactions` list, `subscription` via `Subscription`
       ⋈ `SubscriptionPlan`, verification status, `auditHistory` via
       `auditLog.listActionsForUser`. Returns `null` when the user doesn't exist or is
       soft-deleted (contracts/api.md).
-- [ ] T011 [US1] Export `searchUsers` and `getUserDetail` from `src/modules/admin/index.ts`.
+- [X] T011 [US1] Export `searchUsers` and `getUserDetail` from `src/modules/admin/index.ts`.
       (depends on T009, T010)
-- [ ] T012 [US1] Create `src/app/(admin)/admin/usuarios/page.tsx` (server component): reads
+- [X] T012 [US1] Create `src/app/(admin)/admin/usuarios/page.tsx` (server component): reads
       the `?q=` search param, calls `searchUsers`, renders an empty state when `q` is blank
       and a "no user found" state when it matches nothing, otherwise a result list linking
       to `/admin/usuarios/{id}`. (depends on T011)
-- [ ] T013 [P] [US1] Create `src/app/(admin)/admin/usuarios/UserSearch.tsx` (client
+- [X] T013 [P] [US1] Create `src/app/(admin)/admin/usuarios/UserSearch.tsx` (client
       component): search input that pushes `?q=` via `useRouter`, mirroring the pattern in
       `AdminThemes.tsx`.
-- [ ] T014 [US1] Create `src/app/(admin)/admin/usuarios/[id]/page.tsx` (server component):
+- [X] T014 [US1] Create `src/app/(admin)/admin/usuarios/[id]/page.tsx` (server component):
       calls `getUserDetail(id)`, `notFound()` when null, renders the submissions / credits /
       subscription / verification / audit-history sections with empty states per the spec's
       edge cases. (depends on T010)
-- [ ] T015 [US1] Update `src/app/(admin)/layout.tsx` nav: add a "Usuários" link to
+- [X] T015 [US1] Update `src/app/(admin)/layout.tsx` nav: add a "Usuários" link to
       `/admin/usuarios`.
 
 **Checkpoint**: User Story 1 is fully functional and testable independently — an admin can
@@ -127,9 +127,9 @@ confirm the balance updates immediately, and confirm an audit-log entry exists.
 
 ### Tests for User Story 2
 
-- [ ] T016 [P] [US2] Update `tests/unit/credits.test.ts`: `grantManualCredits` accepts a
+- [X] T016 [P] [US2] Update `tests/unit/credits.test.ts`: `grantManualCredits` accepts a
       negative amount and records it correctly; still rejects `0` and non-integer amounts.
-- [ ] T017 [P] [US2] Unit tests for `grantCreditAdjustment()` in
+- [X] T017 [P] [US2] Unit tests for `grantCreditAdjustment()` in
       `tests/unit/admin/credits.test.ts`: a positive grant updates the balance and writes
       one `AdminActionLog` row; a negative deduction does the same with a negative amount;
       `amount === 0` and an empty/whitespace `reason` are both rejected without writing
@@ -137,28 +137,28 @@ confirm the balance updates immediately, and confirm an audit-log entry exists.
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Widen the guard in `grantManualCredits` (`src/modules/credits/index.ts`) to
+- [X] T018 [US2] Widen the guard in `grantManualCredits` (`src/modules/credits/index.ts`) to
       accept negative integers, rejecting only `amount === 0` or non-integer values; update
       its doc comment per `research.md`.
-- [ ] T019 [US2] Implement `grantCreditAdjustment(adminId, targetUserId, amount, reason)` in
+- [X] T019 [US2] Implement `grantCreditAdjustment(adminId, targetUserId, amount, reason)` in
       `src/modules/admin/credits.ts`: validate per `data-model.md`'s Validation rules, then
       in one `prisma.$transaction` call `credits.grantManualCredits` +
       `auditLog.recordAdminAction`; return the updated balance and the audit entry.
       (depends on T003, T018)
-- [ ] T020 [US2] Export `grantCreditAdjustment` from `src/modules/admin/index.ts`. (depends
+- [X] T020 [US2] Export `grantCreditAdjustment` from `src/modules/admin/index.ts`. (depends
       on T019)
-- [ ] T021 [US2] Implement `POST /api/admin/usuarios/[id]/credits` in
+- [X] T021 [US2] Implement `POST /api/admin/usuarios/[id]/credits` in
       `src/app/api/admin/usuarios/[id]/credits/route.ts`: `requireAdmin()`, Zod-validate
       `{amount, reason}` (contracts/api.md), 404 `NOT_FOUND` if the target doesn't exist,
       call `grantCreditAdjustment`, return `{balance, auditEntry}`. (depends on T020)
-- [ ] T022 [P] [US2] Integration test for the credit-grant route in
+- [X] T022 [P] [US2] Integration test for the credit-grant route in
       `tests/integration/admin-dashboard.test.ts`: a valid grant returns 200 with the
       updated balance and creates an `AdminActionLog` row; `amount: 0` returns 400
       `VALIDATION_ERROR` with no new ledger/audit rows; a non-admin session gets 403.
-- [ ] T023 [US2] Create `src/app/(admin)/admin/usuarios/[id]/CreditGrantForm.tsx` (client
+- [X] T023 [US2] Create `src/app/(admin)/admin/usuarios/[id]/CreditGrantForm.tsx` (client
       component): amount + reason inputs, posts to the new route, `router.refresh()` on
       success, surfaces validation errors (mirrors `AdminThemes.tsx`'s `readError` helper).
-- [ ] T024 [US2] Wire `CreditGrantForm` and the (already-present) `auditHistory` list into
+- [X] T024 [US2] Wire `CreditGrantForm` and the (already-present) `auditHistory` list into
       `src/app/(admin)/admin/usuarios/[id]/page.tsx`. (depends on T014, T023)
 
 **Checkpoint**: User Stories 1 and 2 together deliver the full search → inspect → grant →
@@ -176,7 +176,7 @@ manual count of `active` subscriptions × plan price.
 
 ### Tests for User Story 3
 
-- [ ] T025 [P] [US3] Unit tests for `getRevenueSummary()` in
+- [X] T025 [P] [US3] Unit tests for `getRevenueSummary()` in
       `tests/unit/admin/revenue.test.ts`: MRR sums only `active`-status subscriptions at
       their plan's price; subscriber counts broken down correctly by tier and status;
       recent-payments feed ordered newest-first and capped at 20; zero-subscriptions state
@@ -184,15 +184,15 @@ manual count of `active` subscriptions × plan price.
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Implement `getRevenueSummary()` in `src/modules/admin/revenue.ts`, per
+- [X] T026 [US3] Implement `getRevenueSummary()` in `src/modules/admin/revenue.ts`, per
       `data-model.md`'s `RevenueSummary`.
-- [ ] T027 [US3] Export `getRevenueSummary` from `src/modules/admin/index.ts`. (depends on
+- [X] T027 [US3] Export `getRevenueSummary` from `src/modules/admin/index.ts`. (depends on
       T026)
-- [ ] T028 [US3] Create `src/app/(admin)/admin/page.tsx` as the new overview (server
+- [X] T028 [US3] Create `src/app/(admin)/admin/page.tsx` as the new overview (server
       component), replacing the old redirect to `/admin/redacoes-semana`: render MRR,
       subscriber-by-tier/status, and recent-payments cards from `getRevenueSummary()`.
       (depends on T026)
-- [ ] T029 [US3] Update `src/app/(admin)/layout.tsx` nav: add a "Painel" link to `/admin`.
+- [X] T029 [US3] Update `src/app/(admin)/layout.tsx` nav: add a "Painel" link to `/admin`.
       (depends on T015 — same file)
 
 **Checkpoint**: User Stories 1–3 are all independently functional; the admin overview now
@@ -210,7 +210,7 @@ grouped count of submissions.
 
 ### Tests for User Story 4
 
-- [ ] T030 [P] [US4] Unit tests for `getPipelineHealth()` in
+- [X] T030 [P] [US4] Unit tests for `getPipelineHealth()` in
       `tests/unit/admin/pipeline.test.ts`: all 7 `SubmissionStatus` values present
       (including zero-count ones); failure-reason and zero-reason breakdowns correct;
       score-distribution buckets (width 100) computed only over `completed` submissions'
@@ -218,11 +218,11 @@ grouped count of submissions.
 
 ### Implementation for User Story 4
 
-- [ ] T031 [US4] Implement `getPipelineHealth()` in `src/modules/admin/pipeline.ts`, per
+- [X] T031 [US4] Implement `getPipelineHealth()` in `src/modules/admin/pipeline.ts`, per
       `data-model.md`'s `PipelineHealth`.
-- [ ] T032 [US4] Export `getPipelineHealth` from `src/modules/admin/index.ts`. (depends on
+- [X] T032 [US4] Export `getPipelineHealth` from `src/modules/admin/index.ts`. (depends on
       T031)
-- [ ] T033 [US4] Extend `src/app/(admin)/admin/page.tsx` with a pipeline-health section
+- [X] T033 [US4] Extend `src/app/(admin)/admin/page.tsx` with a pipeline-health section
       (status counts, failure/zero-reason breakdown, score-distribution histogram) from
       `getPipelineHealth()`. (depends on T028, T031)
 
@@ -241,28 +241,29 @@ of the underlying records.
 
 ### Tests for User Story 5
 
-- [ ] T034 [P] [US5] Unit tests for `getGrowthSnapshot()` in
+- [X] T034 [P] [US5] Unit tests for `getGrowthSnapshot()` in
       `tests/unit/admin/growth.test.ts`: correct counts per window (24h/7d/30d/all-time) for
       signups, submissions, and verifications; all-time totals match what the retired
       `getAppMetrics` used to return.
 
 ### Implementation for User Story 5
 
-- [ ] T035 [US5] Implement `getGrowthSnapshot()` in `src/modules/admin/growth.ts`, per
+- [X] T035 [US5] Implement `getGrowthSnapshot()` in `src/modules/admin/growth.ts`, per
       `data-model.md`'s `GrowthSnapshot`.
-- [ ] T036 [US5] Export `getGrowthSnapshot` from `src/modules/admin/index.ts`. (depends on
+- [X] T036 [US5] Export `getGrowthSnapshot` from `src/modules/admin/index.ts`. (depends on
       T035)
-- [ ] T037 [US5] Extend `src/app/(admin)/admin/page.tsx` with a growth-snapshot section
+- [X] T037 [US5] Extend `src/app/(admin)/admin/page.tsx` with a growth-snapshot section
       (24h/7d/30d/all-time cards) from `getGrowthSnapshot()`. (depends on T028, T035)
-- [ ] T038 [US5] Delete `getAppMetrics` from `src/modules/weekly/metrics.ts` and its export
+- [X] T038 [US5] Delete `getAppMetrics` from `src/modules/weekly/metrics.ts` and its export
       from `src/modules/weekly/index.ts`; delete `src/app/api/admin/metrics/route.ts`.
       (depends on T037 — the overview must cover its data first)
-- [ ] T039 [US5] Change `src/app/(admin)/admin/metricas/page.tsx` to redirect to `/admin`
+- [X] T039 [US5] Change `src/app/(admin)/admin/metricas/page.tsx` to redirect to `/admin`
       (contracts/api.md — "Removed Endpoint"). (depends on T038)
-- [ ] T040 [US5] Update `src/app/(admin)/layout.tsx` nav: remove the old "Métricas" link.
+- [X] T040 [US5] Update `src/app/(admin)/layout.tsx` nav: remove the old "Métricas" link.
       (depends on T029 — same file)
-- [ ] T041 [P] [US5] Check `tests/integration/weekly-admin.test.ts` for assertions against
-      the now-deleted `getAppMetrics`/`GET /api/admin/metrics`; remove any that exist.
+- [X] T041 [P] [US5] Check `tests/integration/weekly-admin.test.ts` for assertions against
+      the now-deleted `getAppMetrics`/`GET /api/admin/metrics`; remove any that exist. (none
+      found — that file only tests weekly-themes routes.)
 
 **Checkpoint**: All five user stories are independently functional — the new dashboard
 fully replaces the old two-page admin panel.
@@ -273,14 +274,19 @@ fully replaces the old two-page admin panel.
 
 **Purpose**: Cleanup that spans the whole feature, deferred until every story lands.
 
-- [ ] T042 [P] Run `pnpm lint` and `pnpm format:check`; fix any violations in the new/changed
-      files.
-- [ ] T043 Delete `scripts/add-credits.ts` now that US2's dashboard action supersedes it —
-      confirm with the user before removing (quickstart.md).
-- [ ] T044 Walk through `specs/019-admin-dashboard/quickstart.md`'s manual verification pass
-      (all 5 priorities) against local dev with a real admin session.
-- [ ] T045 Run the full `pnpm test` suite to confirm no regressions in the existing
+- [X] T042 [P] Run `pnpm lint` and `pnpm format:check`; fix any violations in the new/changed
+      files. (pre-existing violations remain in unrelated files: a stray `.claude/worktrees/`
+      copy, `ds-bundle/` vendor bundle, `.ds-sync/` tooling — out of scope.)
+- [X] T043 Delete `scripts/add-credits.ts` now that US2's dashboard action supersedes it —
+      confirm with the user before removing (quickstart.md). (confirmed, deleted)
+- [X] T044 Walk through `specs/019-admin-dashboard/quickstart.md`'s manual verification pass
+      (all 5 priorities) against local dev with a real admin session. (Playwright-driven pass
+      against local Postgres + FAKE_VENDORS=1: search→detail, grant+deduct+audit, revenue,
+      pipeline, growth, and the /admin/metricas redirect all confirmed working, zero console
+      errors.)
+- [X] T045 Run the full `pnpm test` suite to confirm no regressions in the existing
       `weekly`/`credits` tests from the `grantManualCredits` and `getAppMetrics` changes.
+      (250/250 passing.)
 
 ---
 

@@ -36,6 +36,9 @@ model User {
   ledGroups          Group[]
   groupMemberships   GroupMember[]
   groupThemeEntries  GroupThemeEntry[]
+
+  adminActionsPerformed AdminActionLog[] @relation("AdminActionsPerformed")
+  adminActionsReceived  AdminActionLog[] @relation("AdminActionsReceived")
 }
 
 enum AuthTokenKind {
@@ -453,4 +456,27 @@ model RateLimitHit {
   createdAt DateTime @default(now())
 
   @@index([key, createdAt])
+}
+
+enum AdminActionType {
+  credit_grant
+}
+
+// Trilha de auditoria de ações administrativas (feature 019). targetUserId é
+// nullable com SetNull — mesmo padrão de PaymentTransaction.userId — para que
+// o registro sobreviva se a conta alvo for apagada/anonimizada no futuro.
+model AdminActionLog {
+  id           String           @id @default(uuid())
+  adminId      String
+  action       AdminActionType
+  targetUserId String?
+  amount       Int?
+  reason       String?
+  createdAt    DateTime         @default(now())
+
+  admin      User  @relation("AdminActionsPerformed", fields: [adminId], references: [id])
+  targetUser User? @relation("AdminActionsReceived", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([targetUserId, createdAt])
+  @@index([adminId, createdAt])
 }

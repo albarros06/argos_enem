@@ -174,6 +174,25 @@ describe("credits ledger", () => {
     expect((await getBalance(user.id)).freeRemaining).toBe(6);
   });
 
+  it("grantManualCredits accepts negative amounts as deductions", async () => {
+    const user = await createUser();
+    await grantManualCredits(user.id, 5);
+    await grantManualCredits(user.id, -2);
+
+    expect((await getBalance(user.id)).freeRemaining).toBe(4); // 1 monthly + 5 - 2 manual
+
+    const deduction = await prisma.creditTransaction.findFirst({
+      where: { userId: user.id, kind: "manual_grant", amount: -2 },
+    });
+    expect(deduction).not.toBeNull();
+  });
+
+  it("grantManualCredits still rejects a zero or non-integer amount", async () => {
+    const user = await createUser();
+    await expect(grantManualCredits(user.id, 0)).rejects.toThrow();
+    await expect(grantManualCredits(user.id, 1.5)).rejects.toThrow();
+  });
+
   it("consumes the expiring monthly credit before the non-expiring manual pool", async () => {
     const user = await createUser();
     await grantManualCredits(user.id, 2);

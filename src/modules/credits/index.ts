@@ -57,11 +57,14 @@ export async function ensureFreeMonthlyCredit(userId: string, db: Db = prisma) {
 const MANUAL_CYCLE_ID = "manual";
 
 // Concessão manual (operacional/admin): crédito livre, sem ciclo mensal, que
-// não expira — soma direto no freeRemaining. Registrado com kind próprio
-// para auditoria.
+// não expira — soma direto no freeRemaining. Aceita valores negativos
+// (deduções, ex.: correção de um crédito concedido por engano) — só rejeita
+// zero ou não-inteiro. Registrado com kind próprio para auditoria.
 export async function grantManualCredits(userId: string, amount: number, db: Db = prisma) {
-  if (!Number.isInteger(amount) || amount <= 0) {
-    throw new Error(`Quantidade de créditos inválida: ${amount} (esperado inteiro positivo)`);
+  if (!Number.isInteger(amount) || amount === 0) {
+    throw new Error(
+      `Quantidade de créditos inválida: ${amount} (esperado inteiro diferente de zero)`,
+    );
   }
   await db.creditTransaction.create({
     data: { userId, amount, kind: "manual_grant", cycleId: MANUAL_CYCLE_ID },
@@ -167,7 +170,11 @@ async function computeBalance(db: Db, userId: string): Promise<CreditBalance> {
   const monthlyFree = await sumLedger(db, userId, freeCycleId());
   const manualFree = await sumLedger(db, userId, MANUAL_CYCLE_ID);
   const quotaRemaining = cycle ? await sumLedger(db, userId, cycle.cycleId) : 0;
-  return { freeRemaining: monthlyFree + manualFree, quotaRemaining, cycleEndsAt: cycle?.endsAt ?? null };
+  return {
+    freeRemaining: monthlyFree + manualFree,
+    quotaRemaining,
+    cycleEndsAt: cycle?.endsAt ?? null,
+  };
 }
 
 async function sumLedger(db: Db, userId: string, cycleId: string | null): Promise<number> {
