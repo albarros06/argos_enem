@@ -26,8 +26,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Link href="/admin/redacoes-semana">Redações da semana</Link>
         <Link href="/admin/metricas">Métricas</Link>
         <span style={{ marginLeft: "auto" }}>
-          <LogoutButton />
+          <Link href="/dashboard">Voltar ao painel</Link>
         </span>
+        <LogoutButton />
       </nav>
       <main>{children}</main>
     </>
