@@ -45,4 +45,4 @@ export {
   type HistoryEntry,
 } from "./views";
 
-export { getThemeMetrics, getAppMetrics, type ThemeMetrics, type AppMetrics } from "./metrics";
+export { getThemeMetrics, type ThemeMetrics } from "./metrics";
